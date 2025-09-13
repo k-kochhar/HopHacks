@@ -36,8 +36,8 @@ export type Tag = {
   tagId: string,
   gameId: string,
   isActive: boolean,
+  orderIndex: number,
   clue: string | undefined,
-  orderIndex: number | undefined,
 };
 
 /**
@@ -53,8 +53,8 @@ export namespace Tag {
       new ProductTypeElement("tagId", AlgebraicType.createStringType()),
       new ProductTypeElement("gameId", AlgebraicType.createStringType()),
       new ProductTypeElement("isActive", AlgebraicType.createBoolType()),
+      new ProductTypeElement("orderIndex", AlgebraicType.createI32Type()),
       new ProductTypeElement("clue", AlgebraicType.createOptionType(AlgebraicType.createStringType())),
-      new ProductTypeElement("orderIndex", AlgebraicType.createOptionType(AlgebraicType.createI32Type())),
     ]);
   }
 

@@ -36,8 +36,8 @@ import {
 export type ActivateTag = {
   gameId: string,
   tagId: string,
+  orderIndex: number,
   clue: string | undefined,
-  orderIndex: number | undefined,
 };
 
 /**
@@ -52,8 +52,8 @@ export namespace ActivateTag {
     return AlgebraicType.createProductType([
       new ProductTypeElement("gameId", AlgebraicType.createStringType()),
       new ProductTypeElement("tagId", AlgebraicType.createStringType()),
+      new ProductTypeElement("orderIndex", AlgebraicType.createI32Type()),
       new ProductTypeElement("clue", AlgebraicType.createOptionType(AlgebraicType.createStringType())),
-      new ProductTypeElement("orderIndex", AlgebraicType.createOptionType(AlgebraicType.createI32Type())),
     ]);
   }
 

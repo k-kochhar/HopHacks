@@ -34,7 +34,6 @@ import {
 } from "@clockworklabs/spacetimedb-sdk";
 
 export type DeleteTag = {
-  gameId: string,
   tagId: string,
 };
 
@@ -48,7 +47,6 @@ export namespace DeleteTag {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("gameId", AlgebraicType.createStringType()),
       new ProductTypeElement("tagId", AlgebraicType.createStringType()),
     ]);
   }

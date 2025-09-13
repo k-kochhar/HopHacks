@@ -137,15 +137,22 @@ export default function TagPage() {
 
   const callReducer = async (reducerName, args) => {
     try {
-      const response = await fetch(`http://localhost:3000/v1/database/hunt/call/${reducerName}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(args)
-      });
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to call ${reducerName}: ${errorText}`);
+      if (!connection || !connection.db) {
+        throw new Error('SpacetimeDB connection not ready');
       }
+      
+      // Use the SpacetimeDB client's callReducer method
+      switch (reducerName) {
+        case 'activate_tag':
+          connection.reducers.activateTag(args[0], args[1], args[2], args[3]);
+          break;
+        case 'claim_tag':
+          connection.reducers.claimTag(args[0], args[1], args[2]);
+          break;
+        default:
+          throw new Error(`Unknown reducer: ${reducerName}`);
+      }
+      
       console.log(`Tag page: Reducer ${reducerName} called successfully.`);
     } catch (err) {
       console.error(`Tag page: Error calling reducer ${reducerName}:`, err);
@@ -192,19 +199,28 @@ export default function TagPage() {
     setMessage('');
 
     try {
-      // Call SpacetimeDB activate_tag reducer
-      const response = await fetch('http://localhost:3000/v1/database/hunt/call/activate_tag', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify([currentGameId, tagId, null, null])
+      // Call SpacetimeDB activate_tag reducer using client SDK
+      const connection = getSpacetimeDBConnection();
+      
+      // Wait for connection to be ready
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Connection timeout'));
+        }, 5000);
+        
+        const checkReady = () => {
+          if (connection && connection.reducers) {
+            clearTimeout(timeout);
+            resolve();
+          } else {
+            setTimeout(checkReady, 100);
+          }
+        };
+        setTimeout(checkReady, 100);
       });
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to activate tag: ${errorText}`);
-      }
+      // Call the reducer using the client SDK
+      connection.reducers.activateTag(currentGameId, tagId, 1, null); // order_index = 1, clue = null
       
       setMessage('Tag activated successfully! ✅');
       setTimeout(() => setMessage(''), 3000);
@@ -227,19 +243,28 @@ export default function TagPage() {
     setMessage('');
 
     try {
-      // Call SpacetimeDB claim_tag reducer
-      const response = await fetch('http://localhost:3000/v1/database/hunt/call/claim_tag', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify([currentGameId, playerData.playerId, tagId])
+      // Call SpacetimeDB claim_tag reducer using client SDK
+      const connection = getSpacetimeDBConnection();
+      
+      // Wait for connection to be ready
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Connection timeout'));
+        }, 5000);
+        
+        const checkReady = () => {
+          if (connection && connection.reducers) {
+            clearTimeout(timeout);
+            resolve();
+          } else {
+            setTimeout(checkReady, 100);
+          }
+        };
+        setTimeout(checkReady, 100);
       });
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to claim tag: ${errorText}`);
-      }
+      // Call the reducer using the client SDK
+      connection.reducers.claimTag(currentGameId, playerData.playerId, tagId);
       
       setMessage(`Tag claimed successfully! 🎉 You now have ${playerClaimCount + 1}/${totalActiveTags} tags.`);
       setTimeout(() => setMessage(''), 3000);
@@ -309,11 +334,21 @@ export default function TagPage() {
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Tag: {tagId}</h1>
-              <p className="text-sm text-gray-500">
-                {role === 'organizer' ? 'Organizer View' : `Player: ${playerData?.name}`}
-              </p>
+            <div className="flex items-center space-x-4">
+              {role === 'player' && (
+                <button
+                  onClick={() => router.push('/dashboard')}
+                  className="text-sm text-blue-600 hover:text-blue-500 flex items-center"
+                >
+                  ← Back to Dashboard
+                </button>
+              )}
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Tag: {tagId}</h1>
+                <p className="text-sm text-gray-500">
+                  {role === 'organizer' ? 'Organizer View' : `Player: ${playerData?.name}`}
+                </p>
+              </div>
             </div>
             <button
               onClick={() => router.push('/join')}

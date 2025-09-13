@@ -13,7 +13,8 @@ export default function Home() {
     if (role === 'organizer') {
       router.push('/admin');
     } else if (role === 'player') {
-      router.push('/t/TAG001');
+      // Players should go to their dashboard
+      router.push('/dashboard');
     } else {
       router.push('/join');
     }

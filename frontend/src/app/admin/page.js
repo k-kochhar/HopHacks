@@ -26,7 +26,6 @@
 
 import { useState, useEffect } from 'react';
 import { getSpacetimeDBConnection } from '../../lib/spacetimedb';
-import RoleGate from '../../components/RoleGate';
 import { groupLeaderboard } from '../../lib/utils';
 
 function AdminPageContent() {
@@ -38,6 +37,7 @@ function AdminPageContent() {
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState({});
   const [currentGameId, setCurrentGameId] = useState(null);
+  const [connection, setConnection] = useState(null);
 
   // Fallback: ensure we always have a game selected
   useEffect(() => {
@@ -52,10 +52,13 @@ function AdminPageContent() {
       try {
         console.log('Starting connection setup...');
         
-        const connection = getSpacetimeDBConnection();
-        console.log('Connection object created:', connection);
+        const conn = getSpacetimeDBConnection();
+        console.log('Connection object created:', conn);
         console.log('Connection URI:', process.env.NEXT_PUBLIC_STDB_URI || 'ws://localhost:3000');
         console.log('Connection module name:', process.env.NEXT_PUBLIC_SPACETIMEDB_NAME || 'hunt');
+        
+        // Set connection in state so other functions can access it
+        setConnection(conn);
         
         // Wait for connection.db to be ready
         await new Promise((resolve, reject) => {
@@ -64,10 +67,10 @@ function AdminPageContent() {
           }, 10000);
           
           const checkDbReady = () => {
-            if (connection && connection.db) {
+            if (conn && conn.db) {
               clearTimeout(timeout);
               console.log('Connection.db exists: true');
-              resolve(connection);
+              resolve(conn);
             } else {
               console.log('Checking connection state...');
               setTimeout(checkDbReady, 200);
@@ -78,18 +81,18 @@ function AdminPageContent() {
 
         console.log('Attempting to subscribe to all tables...');
 
-        const subscription = connection
+        const subscription = conn
           .subscriptionBuilder()
           .onApplied(() => {
             console.log('Subscription applied!');
-            console.log('Connection.db:', connection.db);
-            console.log('Available tables:', Object.keys(connection.db || {}));
+            console.log('Connection.db:', conn.db);
+            console.log('Available tables:', Object.keys(conn.db || {}));
             
             // Get data
-            const gamesData = connection.db.games.iter();
-            const tagsData = connection.db.tags.iter();
-            const playersData = connection.db.players.iter();
-            const progressData = connection.db.progress.iter();
+            const gamesData = conn.db.games.iter();
+            const tagsData = conn.db.tags.iter();
+            const playersData = conn.db.players.iter();
+            const progressData = conn.db.progress.iter();
             
             console.log('Data updated:', {
               games: gamesData.length,
@@ -107,7 +110,8 @@ function AdminPageContent() {
             // If no games, create one
             if (gamesData.length === 0) {
               const gameId = `game_${Date.now()}`;
-              callReducer('create_game', [gameId]);
+              // Use conn.reducers directly since connection state might not be set yet
+              conn.reducers.createGame(gameId);
             } else {
               setCurrentGameId(gamesData[0].gameId);
             }
@@ -143,17 +147,38 @@ function AdminPageContent() {
     setActionLoading(prev => ({ ...prev, [actionKey]: true }));
     
     try {
-      const response = await fetch(`http://localhost:3000/v1/database/hunt/call/${reducerName}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(args)
-      });
+      if (!connection || !connection.db) {
+        throw new Error('SpacetimeDB connection not ready');
+      }
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to call ${reducerName}: ${errorText}`);
+      // Use the SpacetimeDB client's reducers
+      switch (reducerName) {
+        case 'create_game':
+          connection.reducers.createGame(args[0]);
+          break;
+        case 'start_game':
+          connection.reducers.startGame(args[0]);
+          break;
+        case 'end_game':
+          connection.reducers.endGame(args[0]);
+          break;
+        case 'create_tag':
+          connection.reducers.createTag(args[0], args[1], args[2], args[3]);
+          break;
+        case 'activate_tag':
+          connection.reducers.activateTag(args[0], args[1], args[2], args[3]);
+          break;
+        case 'claim_tag':
+          connection.reducers.claimTag(args[0], args[1], args[2]);
+          break;
+        case 'upsert_player':
+          connection.reducers.upsertPlayer(args[0], args[1], args[2]);
+          break;
+        case 'delete_tag':
+          connection.reducers.deleteTag(args[0]);
+          break;
+        default:
+          throw new Error(`Unknown reducer: ${reducerName}`);
       }
       
       console.log(`Successfully called ${reducerName}`);
@@ -171,21 +196,10 @@ function AdminPageContent() {
       return;
     }
     
-    // Delete all existing games (this wipes everything)
-    for (const game of games) {
-      try {
-        await fetch('http://localhost:3000/v1/database/hunt/call/delete_game_cascade', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify([game.gameId, true])
-        });
-      } catch (err) {
-        console.error('Error deleting game:', err);
-      }
-    }
-    
-    // Create new game (auto-generated ID)
+    // Auto-generate game ID (user never sees this)
     const finalGameId = `game_${Date.now()}`;
+    
+    // The create_game reducer already wipes all existing data, so we just need to call it
     callReducer('create_game', [finalGameId]);
   };
 
@@ -232,11 +246,37 @@ function AdminPageContent() {
     const args = [
       currentGameId,
       tagId, 
-      clue && clue.trim() ? clue.trim() : null, 
-      orderIndex && orderIndex.trim() ? parseInt(orderIndex) : null
+      orderIndex && orderIndex.trim() ? parseInt(orderIndex) : 1,
+      clue && clue.trim() ? clue.trim() : null
     ];
     
     callReducer('activate_tag', args);
+  };
+
+  const createTag = () => {
+    if (!currentGameId) {
+      alert('No game selected. This should not happen.');
+      return;
+    }
+    
+    const tagId = prompt('Enter tag ID (e.g., TAG001, LOCATION_A, etc.):');
+    if (!tagId || !tagId.trim()) {
+      alert('Tag ID is required');
+      return;
+    }
+    
+    const clue = prompt('Enter clue (optional, press Enter to skip):');
+    const orderIndex = prompt('Enter order index (optional, press Enter to skip):');
+    
+    // Create tag as inactive first
+    const args = [
+      currentGameId,
+      tagId.trim(), 
+      orderIndex && orderIndex.trim() ? parseInt(orderIndex) : 1,
+      clue && clue.trim() ? clue.trim() : null
+    ];
+    
+    callReducer('create_tag', args);
   };
 
   // Player management functions
@@ -249,145 +289,10 @@ function AdminPageContent() {
     }
   };
 
-  // Delete functions
-  const deleteTag = async (tagId) => {
-    if (!currentGameId) {
-      alert('No game selected');
-      return;
-    }
-    if (confirm(`Are you sure you want to delete tag ${tagId}? This will also delete all progress entries for this tag.`)) {
-      const actionKey = `delete_tag_${tagId}`;
-      setActionLoading(prev => ({ ...prev, [actionKey]: true }));
-      
-      try {
-                    const response = await fetch('http://localhost:3000/v1/database/hunt/call/delete_tag', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify([currentGameId, tagId])
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Failed to delete tag: ${errorText}`);
-        }
-        
-        alert('Tag deleted successfully!');
-      } catch (err) {
-        console.error('Error deleting tag:', err);
-        alert(`Error: ${err.message}`);
-      } finally {
-        setActionLoading(prev => ({ ...prev, [actionKey]: false }));
-      }
-    }
-  };
-
-  const deletePlayer = async (playerId) => {
-    if (!currentGameId) {
-      alert('No game selected');
-      return;
-    }
-    if (confirm(`Are you sure you want to delete all progress for player ${playerId} in this game?`)) {
-      const actionKey = `delete_player_${playerId}`;
-      setActionLoading(prev => ({ ...prev, [actionKey]: true }));
-      
-      try {
-                    const response = await fetch('http://localhost:3000/v1/database/hunt/call/delete_player', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify([currentGameId, playerId])
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Failed to delete player progress: ${errorText}`);
-        }
-        
-        alert('Player progress deleted successfully!');
-      } catch (err) {
-        console.error('Error deleting player progress:', err);
-        alert(`Error: ${err.message}`);
-      } finally {
-        setActionLoading(prev => ({ ...prev, [actionKey]: false }));
-      }
-    }
-  };
-
-  const deleteProgress = async (playerId, tagId) => {
-    if (!currentGameId) {
-      alert('No game selected');
-      return;
-    }
-    if (confirm(`Are you sure you want to delete this progress entry (${playerId} -> ${tagId})?`)) {
-      const actionKey = `delete_progress_${playerId}_${tagId}`;
-      setActionLoading(prev => ({ ...prev, [actionKey]: true }));
-      
-      try {
-                    const response = await fetch('http://localhost:3000/v1/database/hunt/call/delete_progress', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify([currentGameId, playerId, tagId])
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Failed to delete progress: ${errorText}`);
-        }
-        
-        alert('Progress entry deleted successfully!');
-      } catch (err) {
-        console.error('Error deleting progress:', err);
-        alert(`Error: ${err.message}`);
-      } finally {
-        setActionLoading(prev => ({ ...prev, [actionKey]: false }));
-      }
-    }
-  };
-
-  const deleteGameCascade = async () => {
-    if (!currentGameId) {
-      alert('No game selected');
-      return;
-    }
-    
-    const confirmGameId = prompt(`Type "${currentGameId}" to confirm game deletion:`);
-    if (confirmGameId !== currentGameId) {
-      alert('Game ID does not match. Deletion cancelled.');
-      return;
-    }
-
-    const deleteOrphanPlayers = confirm('Also delete players with no remaining progress?');
-    
-    if (confirm(`Are you sure you want to DELETE THE ENTIRE GAME "${currentGameId}"? This will delete all tags, progress, and ${deleteOrphanPlayers ? 'orphaned players' : 'keep players'}. This action cannot be undone!`)) {
-      const actionKey = 'delete_game_cascade';
-      setActionLoading(prev => ({ ...prev, [actionKey]: true }));
-      
-      try {
-                    const response = await fetch('http://localhost:3000/v1/database/hunt/call/delete_game_cascade', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify([currentGameId, deleteOrphanPlayers])
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Failed to delete game: ${errorText}`);
-        }
-        
-        alert('Game deleted successfully!');
-      } catch (err) {
-        console.error('Error deleting game:', err);
-        alert(`Error: ${err.message}`);
-      } finally {
-        setActionLoading(prev => ({ ...prev, [actionKey]: false }));
-      }
+  // Tag management functions
+  const deleteTag = (tagId) => {
+    if (confirm(`Are you sure you want to delete tag "${tagId}"? This will also delete all progress entries for this tag.`)) {
+      callReducer('delete_tag', [tagId]);
     }
   };
 
@@ -521,8 +426,8 @@ function AdminPageContent() {
           {currentGame ? (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-gray-50 rounded-lg p-4">
-                <span className="text-sm font-medium text-gray-500">Game ID</span>
-                <p className="text-lg font-semibold text-gray-900 mt-1">{currentGame.gameId}</p>
+                <span className="text-sm font-medium text-gray-500">Game Status</span>
+                <p className="text-lg font-semibold text-gray-900 mt-1 capitalize">{currentGame.status}</p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
                 <span className="text-sm font-medium text-gray-500">Status</span>
@@ -554,12 +459,20 @@ function AdminPageContent() {
           <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-semibold text-gray-900">🏷️ NFC Tags</h2>
-              <button
-                onClick={activateTag}
-                className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200 transition-colors"
-              >
-                Activate Tag
-              </button>
+              <div className="flex space-x-2">
+                <button
+                  onClick={createTag}
+                  className="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200 transition-colors"
+                >
+                  Create Tag
+                </button>
+                <button
+                  onClick={activateTag}
+                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200 transition-colors"
+                >
+                  Activate Tag
+                </button>
+              </div>
             </div>
             <div className="space-y-4">
               {tags && tags.length > 0 ? (
@@ -595,8 +508,8 @@ function AdminPageContent() {
                         <span className="ml-2 font-medium">{tag.orderIndex}</span>
                       </div>
                       <div>
-                        <span className="text-gray-500">Game:</span>
-                        <span className="ml-2 font-medium">{tag.gameId}</span>
+                        <span className="text-gray-500">Status:</span>
+                        <span className="ml-2 font-medium">{tag.isActive ? 'Active' : 'Inactive'}</span>
                       </div>
                     </div>
                     <div className="mt-3">
@@ -628,12 +541,12 @@ function AdminPageContent() {
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="text-gray-500">Claimed:</span>
+                        <span className="text-gray-500">Tag:</span>
                         <span className="ml-2 font-medium text-green-600">{entry.tagId}</span>
                       </div>
                       <div>
-                        <span className="text-gray-500">Game:</span>
-                        <span className="ml-2 font-medium">{entry.gameId}</span>
+                        <span className="text-gray-500">Order:</span>
+                        <span className="ml-2 font-medium">{entry.orderIndex}</span>
                       </div>
                     </div>
                   </div>
@@ -672,14 +585,6 @@ function AdminPageContent() {
                       <p className="text-2xl font-bold text-gray-900">{entry.count}</p>
                       <p className="text-sm text-gray-500">tags claimed</p>
                     </div>
-                    <button
-                      onClick={() => deletePlayer(entry.playerId)}
-                      disabled={actionLoading[`delete_player_${entry.playerId}`]}
-                      className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200 transition-colors disabled:opacity-50"
-                      title="Delete all progress for this player"
-                    >
-                      {actionLoading[`delete_player_${entry.playerId}`] ? '...' : '🗑️'}
-                    </button>
                   </div>
                 </div>
               ))
@@ -746,14 +651,6 @@ function AdminPageContent() {
                       {formatTimestamp(entry.ts)}
                     </div>
                   </div>
-                  <button
-                    onClick={() => deleteProgress(entry.playerId, entry.tagId)}
-                    disabled={actionLoading[`delete_progress_${entry.playerId}_${entry.tagId}`]}
-                    className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200 transition-colors disabled:opacity-50"
-                    title="Delete this progress entry"
-                  >
-                    {actionLoading[`delete_progress_${entry.playerId}_${entry.tagId}`] ? '...' : '×'}
-                  </button>
                 </div>
               ))
             ) : (
@@ -766,27 +663,6 @@ function AdminPageContent() {
                 Showing first 10 of {progress.length} entries
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Danger Zone */}
-        <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6 mt-8">
-          <h2 className="text-2xl font-semibold text-red-800 mb-6">⚠️ Danger Zone</h2>
-          <div className="space-y-4">
-            <div className="p-4 bg-white border border-red-200 rounded-lg">
-              <h3 className="font-semibold text-red-800 mb-2">Delete Entire Game</h3>
-              <p className="text-sm text-red-600 mb-4">
-                This will permanently delete the game, all tags, and all progress entries. 
-                This action cannot be undone!
-              </p>
-              <button
-                onClick={deleteGameCascade}
-                disabled={actionLoading['delete_game_cascade']}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors disabled:opacity-50"
-              >
-                {actionLoading['delete_game_cascade'] ? 'Deleting...' : 'Delete Game (Cascade)'}
-              </button>
-            </div>
           </div>
         </div>
 
@@ -803,9 +679,5 @@ function AdminPageContent() {
 }
 
 export default function AdminPage() {
-  return (
-    <RoleGate requiredRole="organizer" fallbackMessage="Only organizers can access the admin dashboard">
-      <AdminPageContent />
-    </RoleGate>
-  );
+  return <AdminPageContent />;
 }

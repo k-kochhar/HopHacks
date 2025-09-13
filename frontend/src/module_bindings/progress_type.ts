@@ -36,7 +36,8 @@ export type Progress = {
   gameId: string,
   playerId: string,
   tagId: string,
-  ts: bigint,
+  orderIndex: number,
+  timestamp: bigint,
 };
 
 /**
@@ -52,7 +53,8 @@ export namespace Progress {
       new ProductTypeElement("gameId", AlgebraicType.createStringType()),
       new ProductTypeElement("playerId", AlgebraicType.createStringType()),
       new ProductTypeElement("tagId", AlgebraicType.createStringType()),
-      new ProductTypeElement("ts", AlgebraicType.createI64Type()),
+      new ProductTypeElement("orderIndex", AlgebraicType.createI32Type()),
+      new ProductTypeElement("timestamp", AlgebraicType.createI64Type()),
     ]);
   }
 

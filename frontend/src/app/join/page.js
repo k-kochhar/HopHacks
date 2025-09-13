@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { setRole, setPlayerData } from '../../lib/localStorage';
+import { getSpacetimeDBConnection } from '../../lib/spacetimedb';
 
 /**
  * Join page for role selection
@@ -59,20 +60,29 @@ export default function JoinPage() {
           team: null // No teams needed
         });
 
-        // Call SpacetimeDB upsert_player reducer
+        // Call SpacetimeDB upsert_player reducer using client SDK
         try {
-          const response = await fetch('http://localhost:3000/v1/database/hunt/call/upsert_player', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify([playerId, playerName.trim(), null]) // No teams needed
+          const connection = getSpacetimeDBConnection();
+          
+          // Wait for connection to be ready
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('Connection timeout'));
+            }, 5000);
+            
+            const checkReady = () => {
+              if (connection && connection.reducers) {
+                clearTimeout(timeout);
+                resolve();
+              } else {
+                setTimeout(checkReady, 100);
+              }
+            };
+            setTimeout(checkReady, 100);
           });
           
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to register player: ${errorText}`);
-          }
+          // Call the reducer using the client SDK
+          connection.reducers.upsertPlayer(playerId, playerName.trim(), null);
           
           console.log('Successfully registered player');
         } catch (err) {
@@ -82,8 +92,13 @@ export default function JoinPage() {
           return;
         }
 
-        // Redirect to a test tag for now
-        router.push('/t/TAG001');
+        // Redirect to admin dashboard for organizers, or to game for players
+        if (selectedRole === 'organizer') {
+          router.push('/admin');
+        } else {
+          // Redirect players to their dashboard
+          router.push('/dashboard');
+        }
       }
     } catch (error) {
       console.error('Error during join:', error);
@@ -206,7 +221,7 @@ export default function JoinPage() {
         {/* Info */}
         <div className="text-center">
           <p className="text-xs text-gray-500">
-            Organizer password: ABC123 (for demo purposes)
+            Organizer password: ABC123
           </p>
         </div>
       </div>

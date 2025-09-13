@@ -59,28 +59,6 @@ export class ProgressTableHandle {
   iter(): Iterable<Progress> {
     return this.tableCache.iter();
   }
-  /**
-   * Access to the `gameId` unique index on the table `progress`,
-   * which allows point queries on the field of the same name
-   * via the [`ProgressGameIdUnique.find`] method.
-   *
-   * Users are encouraged not to explicitly reference this type,
-   * but to directly chain method calls,
-   * like `ctx.db.progress.gameId().find(...)`.
-   *
-   * Get a handle on the `gameId` unique index on the table `progress`.
-   */
-  gameId = {
-    // Find the subscribed row whose `gameId` column value is equal to `col_val`,
-    // if such a row is present in the client cache.
-    find: (col_val: string): Progress | undefined => {
-      for (let row of this.tableCache.iter()) {
-        if (deepEqual(row.gameId, col_val)) {
-          return row;
-        }
-      }
-    },
-  };
 
   onInsert = (cb: (ctx: EventContext, row: Progress) => void) => {
     return this.tableCache.onInsert(cb);
@@ -97,12 +75,4 @@ export class ProgressTableHandle {
   removeOnDelete = (cb: (ctx: EventContext, row: Progress) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
-
-  // Updates are only defined for tables with primary keys.
-  onUpdate = (cb: (ctx: EventContext, oldRow: Progress, newRow: Progress) => void) => {
-    return this.tableCache.onUpdate(cb);
-  }
-
-  removeOnUpdate = (cb: (ctx: EventContext, onRow: Progress, newRow: Progress) => void) => {
-    return this.tableCache.removeOnUpdate(cb);
-  }}
+}

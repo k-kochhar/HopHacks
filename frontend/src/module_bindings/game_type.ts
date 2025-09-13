@@ -35,8 +35,6 @@ import {
 export type Game = {
   gameId: string,
   status: string,
-  startedAt: bigint | undefined,
-  endedAt: bigint | undefined,
 };
 
 /**
@@ -51,8 +49,6 @@ export namespace Game {
     return AlgebraicType.createProductType([
       new ProductTypeElement("gameId", AlgebraicType.createStringType()),
       new ProductTypeElement("status", AlgebraicType.createStringType()),
-      new ProductTypeElement("startedAt", AlgebraicType.createOptionType(AlgebraicType.createI64Type())),
-      new ProductTypeElement("endedAt", AlgebraicType.createOptionType(AlgebraicType.createI64Type())),
     ]);
   }
 

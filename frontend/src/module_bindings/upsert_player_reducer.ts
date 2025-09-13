@@ -36,7 +36,7 @@ import {
 export type UpsertPlayer = {
   playerId: string,
   name: string,
-  team: string | undefined,
+  role: string | undefined,
 };
 
 /**
@@ -51,7 +51,7 @@ export namespace UpsertPlayer {
     return AlgebraicType.createProductType([
       new ProductTypeElement("playerId", AlgebraicType.createStringType()),
       new ProductTypeElement("name", AlgebraicType.createStringType()),
-      new ProductTypeElement("team", AlgebraicType.createOptionType(AlgebraicType.createStringType())),
+      new ProductTypeElement("role", AlgebraicType.createOptionType(AlgebraicType.createStringType())),
     ]);
   }
 
