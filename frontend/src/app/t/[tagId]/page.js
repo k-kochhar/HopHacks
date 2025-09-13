@@ -89,9 +89,10 @@ export default function TagPage() {
               progress: progressData.length
             });
             
-            setGames(gamesData);
-            setTags(tagsData);
-            setProgress(progressData);
+            // Force React to re-render by creating new arrays
+            setGames([...gamesData]);
+            setTags([...tagsData]);
+            setProgress([...progressData]);
             
             // If no games, create one
             if (gamesData.length === 0) {
@@ -111,6 +112,60 @@ export default function TagPage() {
           ]);
 
         console.log('Tag page: Subscription created');
+
+        // Set up table callbacks for real-time updates
+        console.log('Tag page: Setting up table callbacks...');
+        
+        // Games table callbacks (delete + insert pattern, no updates)
+        conn.db.games.onInsert((_ctx, row) => {
+          console.log('Tag page: Game inserted:', row);
+          setGames(prev => {
+            // Check if game already exists to prevent duplicates
+            const exists = prev.some(g => g.gameId === row.gameId);
+            if (exists) {
+              console.log('Tag page: Game already exists, replacing:', row.gameId);
+              return prev.map(g => g.gameId === row.gameId ? row : g);
+            } else {
+              console.log('Tag page: Adding new game:', row.gameId);
+              return [...prev, row];
+            }
+          });
+          setCurrentGameId(row.gameId);
+        });
+
+        // Tags table callbacks (delete + insert pattern, no updates)
+        conn.db.tags.onInsert((_ctx, row) => {
+          console.log('Tag page: Tag inserted:', row);
+          setTags(prev => {
+            // Check if tag already exists to prevent duplicates
+            const exists = prev.some(t => t.tagId === row.tagId);
+            if (exists) {
+              console.log('Tag page: Tag already exists, replacing:', row.tagId);
+              return prev.map(t => t.tagId === row.tagId ? row : t);
+            } else {
+              console.log('Tag page: Adding new tag:', row.tagId);
+              return [...prev, row];
+            }
+          });
+        });
+        
+        conn.db.tags.onDelete((_ctx, row) => {
+          console.log('Tag page: Tag deleted:', row);
+          setTags(prev => prev.filter(t => t.tagId !== row.tagId));
+        });
+
+        // Progress table callbacks (append-only, no updates)
+        conn.db.progress.onInsert((_ctx, row) => {
+          console.log('Tag page: Progress inserted:', row);
+          setProgress(prev => [...prev, row]);
+        });
+        
+        conn.db.progress.onDelete((_ctx, row) => {
+          console.log('Tag page: Progress deleted:', row);
+          setProgress(prev => prev.filter(p => 
+            !(p.gameId === row.gameId && p.playerId === row.playerId && p.tagId === row.tagId)
+          ));
+        });
 
         return () => {
           console.log('Tag page: Unsubscribing from tables.');

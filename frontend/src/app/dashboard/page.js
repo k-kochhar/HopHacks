@@ -74,6 +74,49 @@ export default function PlayerDashboard() {
 
         console.log('Dashboard: Subscription created');
 
+        // Set up table callbacks for real-time updates
+        console.log('Dashboard: Setting up table callbacks...');
+        
+        // Tags table callbacks (delete + insert pattern, no updates)
+        conn.db.tags.onInsert((_ctx, row) => {
+          console.log('Dashboard: Tag inserted:', row);
+          setTags(prev => {
+            // Check if tag already exists to prevent duplicates
+            const exists = prev.some(t => t.tagId === row.tagId);
+            if (exists) {
+              console.log('Dashboard: Tag already exists, replacing:', row.tagId);
+              return prev.map(t => t.tagId === row.tagId ? row : t);
+            } else {
+              console.log('Dashboard: Adding new tag:', row.tagId);
+              return [...prev, row];
+            }
+          });
+        });
+        
+        conn.db.tags.onDelete((_ctx, row) => {
+          console.log('Dashboard: Tag deleted:', row);
+          setTags(prev => prev.filter(t => t.tagId !== row.tagId));
+        });
+
+        // Progress table callbacks (append-only, no updates)
+        conn.db.progress.onInsert((_ctx, row) => {
+          console.log('Dashboard: Progress inserted:', row);
+          setProgress(prev => [...prev, row]);
+        });
+        
+        conn.db.progress.onDelete((_ctx, row) => {
+          console.log('Dashboard: Progress deleted:', row);
+          setProgress(prev => prev.filter(p => 
+            !(p.gameId === row.gameId && p.playerId === row.playerId && p.tagId === row.tagId)
+          ));
+        });
+
+        // Games table callbacks (delete + insert pattern, no updates)
+        conn.db.games.onInsert((_ctx, row) => {
+          console.log('Dashboard: Game inserted:', row);
+          setCurrentGame(row);
+        });
+
         // Initial data load
         refreshData(conn, player.playerId);
       } catch (err) {
@@ -103,12 +146,13 @@ export default function PlayerDashboard() {
         // Get all tags for current game
         const allTags = conn.db.tags.iter()
           .filter(tag => tag.gameId === gameId);
-        setTags(allTags);
+        // Force React to re-render by creating new arrays
+        setTags([...allTags]);
 
         // Get player's progress
         const playerProgress = conn.db.progress.iter()
           .filter(p => p.gameId === gameId && p.playerId === playerId);
-        setProgress(playerProgress);
+        setProgress([...playerProgress]);
       }
     } catch (error) {
       console.error('Error refreshing data:', error);

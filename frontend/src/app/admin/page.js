@@ -102,10 +102,11 @@ function AdminPageContent() {
             });
             console.log('Games data:', gamesData);
             
-            setGames(gamesData);
-            setTags(tagsData);
-            setPlayers(playersData);
-            setProgress(progressData);
+            // Force React to re-render by creating new arrays
+            setGames([...gamesData]);
+            setTags([...tagsData]);
+            setPlayers([...playersData]);
+            setProgress([...progressData]);
             
             // If no games, create one
             if (gamesData.length === 0) {
@@ -126,6 +127,76 @@ function AdminPageContent() {
           ]);
 
         console.log('Subscription created');
+
+        // Set up table callbacks for real-time updates
+        console.log('Setting up table callbacks...');
+        
+        // Games table callbacks (delete + insert pattern, no updates)
+        conn.db.games.onInsert((_ctx, row) => {
+          console.log('Admin: Game inserted:', row);
+          setGames(prev => {
+            // Check if game already exists to prevent duplicates
+            const exists = prev.some(g => g.gameId === row.gameId);
+            if (exists) {
+              console.log('Admin: Game already exists, replacing:', row.gameId);
+              return prev.map(g => g.gameId === row.gameId ? row : g);
+            } else {
+              console.log('Admin: Adding new game:', row.gameId);
+              return [...prev, row];
+            }
+          });
+          setCurrentGameId(row.gameId);
+        });
+        
+        conn.db.games.onDelete((_ctx, row) => {
+          console.log('Admin: Game deleted:', row);
+          setGames(prev => prev.filter(g => g.gameId !== row.gameId));
+        });
+
+        // Tags table callbacks (delete + insert pattern, no updates)
+        conn.db.tags.onInsert((_ctx, row) => {
+          console.log('Admin: Tag inserted:', row);
+          setTags(prev => {
+            // Check if tag already exists to prevent duplicates
+            const exists = prev.some(t => t.tagId === row.tagId);
+            if (exists) {
+              console.log('Admin: Tag already exists, replacing:', row.tagId);
+              return prev.map(t => t.tagId === row.tagId ? row : t);
+            } else {
+              console.log('Admin: Adding new tag:', row.tagId);
+              return [...prev, row];
+            }
+          });
+        });
+        
+        conn.db.tags.onDelete((_ctx, row) => {
+          console.log('Admin: Tag deleted:', row);
+          setTags(prev => prev.filter(t => t.tagId !== row.tagId));
+        });
+
+        // Players table callbacks (insert-only, no updates)
+        conn.db.players.onInsert((_ctx, row) => {
+          console.log('Admin: Player inserted:', row);
+          setPlayers(prev => [...prev, row]);
+        });
+        
+        conn.db.players.onDelete((_ctx, row) => {
+          console.log('Admin: Player deleted:', row);
+          setPlayers(prev => prev.filter(p => p.playerId !== row.playerId));
+        });
+
+        // Progress table callbacks (append-only, no updates)
+        conn.db.progress.onInsert((_ctx, row) => {
+          console.log('Admin: Progress inserted:', row);
+          setProgress(prev => [...prev, row]);
+        });
+        
+        conn.db.progress.onDelete((_ctx, row) => {
+          console.log('Admin: Progress deleted:', row);
+          setProgress(prev => prev.filter(p => 
+            !(p.gameId === row.gameId && p.playerId === row.playerId && p.tagId === row.tagId)
+          ));
+        });
 
         return () => {
           console.log('Unsubscribing from tables.');
