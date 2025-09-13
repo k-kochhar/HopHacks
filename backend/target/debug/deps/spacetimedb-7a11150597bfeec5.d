@@ -1,0 +1,11 @@
+/Users/williamlin/scavenger-hunt/target/debug/deps/spacetimedb-7a11150597bfeec5.d: /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/lib.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/log_stopwatch.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/logger.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/rng.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/rt.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/table.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/../README.md
+
+/Users/williamlin/scavenger-hunt/target/debug/deps/libspacetimedb-7a11150597bfeec5.rmeta: /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/lib.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/log_stopwatch.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/logger.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/rng.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/rt.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/table.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/../README.md
+
+/Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/lib.rs:
+/Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/log_stopwatch.rs:
+/Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/logger.rs:
+/Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/rng.rs:
+/Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/rt.rs:
+/Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/table.rs:
+/Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-1.3.2/src/../README.md:
