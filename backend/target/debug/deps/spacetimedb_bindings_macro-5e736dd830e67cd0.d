@@ -1,0 +1,9 @@
+/Users/williamlin/scavenger-hunt/target/debug/deps/spacetimedb_bindings_macro-5e736dd830e67cd0.d: /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-bindings-macro-1.3.2/src/lib.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-bindings-macro-1.3.2/src/reducer.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-bindings-macro-1.3.2/src/sats.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-bindings-macro-1.3.2/src/table.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-bindings-macro-1.3.2/src/util.rs
+
+/Users/williamlin/scavenger-hunt/target/debug/deps/libspacetimedb_bindings_macro-5e736dd830e67cd0.dylib: /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-bindings-macro-1.3.2/src/lib.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-bindings-macro-1.3.2/src/reducer.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-bindings-macro-1.3.2/src/sats.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-bindings-macro-1.3.2/src/table.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-bindings-macro-1.3.2/src/util.rs
+
+/Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-bindings-macro-1.3.2/src/lib.rs:
+/Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-bindings-macro-1.3.2/src/reducer.rs:
+/Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-bindings-macro-1.3.2/src/sats.rs:
+/Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-bindings-macro-1.3.2/src/table.rs:
+/Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-bindings-macro-1.3.2/src/util.rs:
