@@ -32,38 +32,36 @@ import {
   type ReducerEventContextInterface,
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
-export type Progress = {
-  gameId: string,
+
+export type UpsertPlayer = {
   playerId: string,
-  tagId: string,
-  ts: bigint,
+  name: string,
+  team: string | undefined,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace Progress {
+export namespace UpsertPlayer {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("gameId", AlgebraicType.createStringType()),
       new ProductTypeElement("playerId", AlgebraicType.createStringType()),
-      new ProductTypeElement("tagId", AlgebraicType.createStringType()),
-      new ProductTypeElement("ts", AlgebraicType.createI64Type()),
+      new ProductTypeElement("name", AlgebraicType.createStringType()),
+      new ProductTypeElement("team", AlgebraicType.createOptionType(AlgebraicType.createStringType())),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: Progress): void {
-    Progress.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: UpsertPlayer): void {
+    UpsertPlayer.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): Progress {
-    return Progress.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): UpsertPlayer {
+    return UpsertPlayer.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }
-
 

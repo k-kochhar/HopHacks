@@ -33,34 +33,32 @@ import {
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 
-export type RegisterPlayer = {
-  playerId: string,
-  name: string,
-  team: string | undefined,
+export type DeleteTag = {
+  gameId: string,
+  tagId: string,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace RegisterPlayer {
+export namespace DeleteTag {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("playerId", AlgebraicType.createStringType()),
-      new ProductTypeElement("name", AlgebraicType.createStringType()),
-      new ProductTypeElement("team", AlgebraicType.createOptionType(AlgebraicType.createStringType())),
+      new ProductTypeElement("gameId", AlgebraicType.createStringType()),
+      new ProductTypeElement("tagId", AlgebraicType.createStringType()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: RegisterPlayer): void {
-    RegisterPlayer.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: DeleteTag): void {
+    DeleteTag.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): RegisterPlayer {
-    return RegisterPlayer.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): DeleteTag {
+    return DeleteTag.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }

@@ -18,20 +18,24 @@ export function useSpacetimeDB<T = any>(tableName: string, query?: string) {
       setLoading(true);
       setError(null);
       
+      console.log(`[useSpacetimeDB] Starting connection for ${tableName}...`);
       const connection = getSpacetimeDBConnection();
       
       // Wait for connection.db to be ready
       await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
+          console.error(`[useSpacetimeDB] Connection timeout for ${tableName}`);
           reject(new Error('Connection timeout: connection.db not ready.'));
         }, 10000);
         
         const checkDbReady = () => {
           if (connection && connection.db) {
+            console.log(`[useSpacetimeDB] Connection ready for ${tableName}`);
             clearTimeout(timeout);
             setConnected(true);
             resolve(connection);
           } else {
+            console.log(`[useSpacetimeDB] Waiting for connection.db for ${tableName}...`);
             setTimeout(checkDbReady, 200);
           }
         };
@@ -39,15 +43,18 @@ export function useSpacetimeDB<T = any>(tableName: string, query?: string) {
       });
 
       // Subscribe to table changes
+      console.log(`[useSpacetimeDB] Subscribing to ${tableName} with query: ${query || `SELECT * FROM ${tableName}`}`);
       const subscription = connection
         .subscriptionBuilder()
         .onApplied(() => {
-          console.log(`Subscription applied for ${tableName}`);
+          console.log(`[useSpacetimeDB] Subscription applied for ${tableName}`);
           const tableHandle = (connection.db as any)[tableName];
           if (tableHandle) {
             const tableData = tableHandle.iter() as T[];
-            console.log(`Data from ${tableName}:`, tableData);
+            console.log(`[useSpacetimeDB] Data from ${tableName}:`, tableData);
             setData(tableData);
+          } else {
+            console.error(`[useSpacetimeDB] No table handle found for ${tableName}`);
           }
           setLoading(false);
         })

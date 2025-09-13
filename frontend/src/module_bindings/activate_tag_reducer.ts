@@ -33,32 +33,36 @@ import {
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 
-export type SetTagActive = {
+export type ActivateTag = {
+  gameId: string,
   tagId: string,
-  isActive: boolean,
+  clue: string | undefined,
+  orderIndex: number | undefined,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace SetTagActive {
+export namespace ActivateTag {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
+      new ProductTypeElement("gameId", AlgebraicType.createStringType()),
       new ProductTypeElement("tagId", AlgebraicType.createStringType()),
-      new ProductTypeElement("isActive", AlgebraicType.createBoolType()),
+      new ProductTypeElement("clue", AlgebraicType.createOptionType(AlgebraicType.createStringType())),
+      new ProductTypeElement("orderIndex", AlgebraicType.createOptionType(AlgebraicType.createI32Type())),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: SetTagActive): void {
-    SetTagActive.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: ActivateTag): void {
+    ActivateTag.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): SetTagActive {
-    return SetTagActive.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): ActivateTag {
+    return ActivateTag.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }

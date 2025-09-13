@@ -32,17 +32,16 @@ import {
   type ReducerEventContextInterface,
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
-export type Progress = {
+
+export type DeletePlayer = {
   gameId: string,
   playerId: string,
-  tagId: string,
-  ts: bigint,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace Progress {
+export namespace DeletePlayer {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
@@ -51,19 +50,16 @@ export namespace Progress {
     return AlgebraicType.createProductType([
       new ProductTypeElement("gameId", AlgebraicType.createStringType()),
       new ProductTypeElement("playerId", AlgebraicType.createStringType()),
-      new ProductTypeElement("tagId", AlgebraicType.createStringType()),
-      new ProductTypeElement("ts", AlgebraicType.createI64Type()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: Progress): void {
-    Progress.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: DeletePlayer): void {
+    DeletePlayer.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): Progress {
-    return Progress.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): DeletePlayer {
+    return DeletePlayer.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }
-
 

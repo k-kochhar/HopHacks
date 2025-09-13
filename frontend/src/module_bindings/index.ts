@@ -34,20 +34,26 @@ import {
 } from "@clockworklabs/spacetimedb-sdk";
 
 // Import and reexport all reducer arg types
-import { AddTag } from "./add_tag_reducer.ts";
-export { AddTag };
+import { ActivateTag } from "./activate_tag_reducer.ts";
+export { ActivateTag };
 import { ClaimTag } from "./claim_tag_reducer.ts";
 export { ClaimTag };
 import { CreateGame } from "./create_game_reducer.ts";
 export { CreateGame };
+import { DeleteGameCascade } from "./delete_game_cascade_reducer.ts";
+export { DeleteGameCascade };
+import { DeletePlayer } from "./delete_player_reducer.ts";
+export { DeletePlayer };
+import { DeleteProgress } from "./delete_progress_reducer.ts";
+export { DeleteProgress };
+import { DeleteTag } from "./delete_tag_reducer.ts";
+export { DeleteTag };
 import { EndGame } from "./end_game_reducer.ts";
 export { EndGame };
-import { RegisterPlayer } from "./register_player_reducer.ts";
-export { RegisterPlayer };
-import { SetTagActive } from "./set_tag_active_reducer.ts";
-export { SetTagActive };
 import { StartGame } from "./start_game_reducer.ts";
 export { StartGame };
+import { UpsertPlayer } from "./upsert_player_reducer.ts";
+export { UpsertPlayer };
 
 // Import and reexport all table handle types
 import { GamesTableHandle } from "./games_table.ts";
@@ -92,6 +98,11 @@ const REMOTE_MODULE = {
     progress: {
       tableName: "progress",
       rowType: Progress.getTypeScriptAlgebraicType(),
+      primaryKey: "gameId",
+      primaryKeyInfo: {
+        colName: "gameId",
+        colType: Progress.getTypeScriptAlgebraicType().product.elements[0].algebraicType,
+      },
     },
     tags: {
       tableName: "tags",
@@ -104,9 +115,9 @@ const REMOTE_MODULE = {
     },
   },
   reducers: {
-    add_tag: {
-      reducerName: "add_tag",
-      argsType: AddTag.getTypeScriptAlgebraicType(),
+    activate_tag: {
+      reducerName: "activate_tag",
+      argsType: ActivateTag.getTypeScriptAlgebraicType(),
     },
     claim_tag: {
       reducerName: "claim_tag",
@@ -116,21 +127,33 @@ const REMOTE_MODULE = {
       reducerName: "create_game",
       argsType: CreateGame.getTypeScriptAlgebraicType(),
     },
+    delete_game_cascade: {
+      reducerName: "delete_game_cascade",
+      argsType: DeleteGameCascade.getTypeScriptAlgebraicType(),
+    },
+    delete_player: {
+      reducerName: "delete_player",
+      argsType: DeletePlayer.getTypeScriptAlgebraicType(),
+    },
+    delete_progress: {
+      reducerName: "delete_progress",
+      argsType: DeleteProgress.getTypeScriptAlgebraicType(),
+    },
+    delete_tag: {
+      reducerName: "delete_tag",
+      argsType: DeleteTag.getTypeScriptAlgebraicType(),
+    },
     end_game: {
       reducerName: "end_game",
       argsType: EndGame.getTypeScriptAlgebraicType(),
     },
-    register_player: {
-      reducerName: "register_player",
-      argsType: RegisterPlayer.getTypeScriptAlgebraicType(),
-    },
-    set_tag_active: {
-      reducerName: "set_tag_active",
-      argsType: SetTagActive.getTypeScriptAlgebraicType(),
-    },
     start_game: {
       reducerName: "start_game",
       argsType: StartGame.getTypeScriptAlgebraicType(),
+    },
+    upsert_player: {
+      reducerName: "upsert_player",
+      argsType: UpsertPlayer.getTypeScriptAlgebraicType(),
     },
   },
   versionInfo: {
@@ -162,47 +185,50 @@ const REMOTE_MODULE = {
 
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
-| { name: "AddTag", args: AddTag }
+| { name: "ActivateTag", args: ActivateTag }
 | { name: "ClaimTag", args: ClaimTag }
 | { name: "CreateGame", args: CreateGame }
+| { name: "DeleteGameCascade", args: DeleteGameCascade }
+| { name: "DeletePlayer", args: DeletePlayer }
+| { name: "DeleteProgress", args: DeleteProgress }
+| { name: "DeleteTag", args: DeleteTag }
 | { name: "EndGame", args: EndGame }
-| { name: "RegisterPlayer", args: RegisterPlayer }
-| { name: "SetTagActive", args: SetTagActive }
 | { name: "StartGame", args: StartGame }
+| { name: "UpsertPlayer", args: UpsertPlayer }
 ;
 
 export class RemoteReducers {
   constructor(private connection: DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
 
-  addTag(tagId: string, gameId: string, clue: string | undefined, orderIndex: number) {
-    const __args = { tagId, gameId, clue, orderIndex };
+  activateTag(gameId: string, tagId: string, clue: string | undefined, orderIndex: number | undefined) {
+    const __args = { gameId, tagId, clue, orderIndex };
     let __writer = new BinaryWriter(1024);
-    AddTag.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    ActivateTag.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("add_tag", __argsBuffer, this.setCallReducerFlags.addTagFlags);
+    this.connection.callReducer("activate_tag", __argsBuffer, this.setCallReducerFlags.activateTagFlags);
   }
 
-  onAddTag(callback: (ctx: ReducerEventContext, tagId: string, gameId: string, clue: string | undefined, orderIndex: number) => void) {
-    this.connection.onReducer("add_tag", callback);
+  onActivateTag(callback: (ctx: ReducerEventContext, gameId: string, tagId: string, clue: string | undefined, orderIndex: number | undefined) => void) {
+    this.connection.onReducer("activate_tag", callback);
   }
 
-  removeOnAddTag(callback: (ctx: ReducerEventContext, tagId: string, gameId: string, clue: string | undefined, orderIndex: number) => void) {
-    this.connection.offReducer("add_tag", callback);
+  removeOnActivateTag(callback: (ctx: ReducerEventContext, gameId: string, tagId: string, clue: string | undefined, orderIndex: number | undefined) => void) {
+    this.connection.offReducer("activate_tag", callback);
   }
 
-  claimTag(gameId: string, tagId: string) {
-    const __args = { gameId, tagId };
+  claimTag(gameId: string, playerId: string, tagId: string) {
+    const __args = { gameId, playerId, tagId };
     let __writer = new BinaryWriter(1024);
     ClaimTag.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("claim_tag", __argsBuffer, this.setCallReducerFlags.claimTagFlags);
   }
 
-  onClaimTag(callback: (ctx: ReducerEventContext, gameId: string, tagId: string) => void) {
+  onClaimTag(callback: (ctx: ReducerEventContext, gameId: string, playerId: string, tagId: string) => void) {
     this.connection.onReducer("claim_tag", callback);
   }
 
-  removeOnClaimTag(callback: (ctx: ReducerEventContext, gameId: string, tagId: string) => void) {
+  removeOnClaimTag(callback: (ctx: ReducerEventContext, gameId: string, playerId: string, tagId: string) => void) {
     this.connection.offReducer("claim_tag", callback);
   }
 
@@ -222,6 +248,70 @@ export class RemoteReducers {
     this.connection.offReducer("create_game", callback);
   }
 
+  deleteGameCascade(gameId: string, deleteOrphanPlayers: boolean) {
+    const __args = { gameId, deleteOrphanPlayers };
+    let __writer = new BinaryWriter(1024);
+    DeleteGameCascade.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("delete_game_cascade", __argsBuffer, this.setCallReducerFlags.deleteGameCascadeFlags);
+  }
+
+  onDeleteGameCascade(callback: (ctx: ReducerEventContext, gameId: string, deleteOrphanPlayers: boolean) => void) {
+    this.connection.onReducer("delete_game_cascade", callback);
+  }
+
+  removeOnDeleteGameCascade(callback: (ctx: ReducerEventContext, gameId: string, deleteOrphanPlayers: boolean) => void) {
+    this.connection.offReducer("delete_game_cascade", callback);
+  }
+
+  deletePlayer(gameId: string, playerId: string) {
+    const __args = { gameId, playerId };
+    let __writer = new BinaryWriter(1024);
+    DeletePlayer.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("delete_player", __argsBuffer, this.setCallReducerFlags.deletePlayerFlags);
+  }
+
+  onDeletePlayer(callback: (ctx: ReducerEventContext, gameId: string, playerId: string) => void) {
+    this.connection.onReducer("delete_player", callback);
+  }
+
+  removeOnDeletePlayer(callback: (ctx: ReducerEventContext, gameId: string, playerId: string) => void) {
+    this.connection.offReducer("delete_player", callback);
+  }
+
+  deleteProgress(gameId: string, playerId: string, tagId: string) {
+    const __args = { gameId, playerId, tagId };
+    let __writer = new BinaryWriter(1024);
+    DeleteProgress.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("delete_progress", __argsBuffer, this.setCallReducerFlags.deleteProgressFlags);
+  }
+
+  onDeleteProgress(callback: (ctx: ReducerEventContext, gameId: string, playerId: string, tagId: string) => void) {
+    this.connection.onReducer("delete_progress", callback);
+  }
+
+  removeOnDeleteProgress(callback: (ctx: ReducerEventContext, gameId: string, playerId: string, tagId: string) => void) {
+    this.connection.offReducer("delete_progress", callback);
+  }
+
+  deleteTag(gameId: string, tagId: string) {
+    const __args = { gameId, tagId };
+    let __writer = new BinaryWriter(1024);
+    DeleteTag.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("delete_tag", __argsBuffer, this.setCallReducerFlags.deleteTagFlags);
+  }
+
+  onDeleteTag(callback: (ctx: ReducerEventContext, gameId: string, tagId: string) => void) {
+    this.connection.onReducer("delete_tag", callback);
+  }
+
+  removeOnDeleteTag(callback: (ctx: ReducerEventContext, gameId: string, tagId: string) => void) {
+    this.connection.offReducer("delete_tag", callback);
+  }
+
   endGame(gameId: string) {
     const __args = { gameId };
     let __writer = new BinaryWriter(1024);
@@ -236,38 +326,6 @@ export class RemoteReducers {
 
   removeOnEndGame(callback: (ctx: ReducerEventContext, gameId: string) => void) {
     this.connection.offReducer("end_game", callback);
-  }
-
-  registerPlayer(playerId: string, name: string, team: string | undefined) {
-    const __args = { playerId, name, team };
-    let __writer = new BinaryWriter(1024);
-    RegisterPlayer.getTypeScriptAlgebraicType().serialize(__writer, __args);
-    let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("register_player", __argsBuffer, this.setCallReducerFlags.registerPlayerFlags);
-  }
-
-  onRegisterPlayer(callback: (ctx: ReducerEventContext, playerId: string, name: string, team: string | undefined) => void) {
-    this.connection.onReducer("register_player", callback);
-  }
-
-  removeOnRegisterPlayer(callback: (ctx: ReducerEventContext, playerId: string, name: string, team: string | undefined) => void) {
-    this.connection.offReducer("register_player", callback);
-  }
-
-  setTagActive(tagId: string, isActive: boolean) {
-    const __args = { tagId, isActive };
-    let __writer = new BinaryWriter(1024);
-    SetTagActive.getTypeScriptAlgebraicType().serialize(__writer, __args);
-    let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("set_tag_active", __argsBuffer, this.setCallReducerFlags.setTagActiveFlags);
-  }
-
-  onSetTagActive(callback: (ctx: ReducerEventContext, tagId: string, isActive: boolean) => void) {
-    this.connection.onReducer("set_tag_active", callback);
-  }
-
-  removeOnSetTagActive(callback: (ctx: ReducerEventContext, tagId: string, isActive: boolean) => void) {
-    this.connection.offReducer("set_tag_active", callback);
   }
 
   startGame(gameId: string) {
@@ -286,12 +344,28 @@ export class RemoteReducers {
     this.connection.offReducer("start_game", callback);
   }
 
+  upsertPlayer(playerId: string, name: string, team: string | undefined) {
+    const __args = { playerId, name, team };
+    let __writer = new BinaryWriter(1024);
+    UpsertPlayer.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("upsert_player", __argsBuffer, this.setCallReducerFlags.upsertPlayerFlags);
+  }
+
+  onUpsertPlayer(callback: (ctx: ReducerEventContext, playerId: string, name: string, team: string | undefined) => void) {
+    this.connection.onReducer("upsert_player", callback);
+  }
+
+  removeOnUpsertPlayer(callback: (ctx: ReducerEventContext, playerId: string, name: string, team: string | undefined) => void) {
+    this.connection.offReducer("upsert_player", callback);
+  }
+
 }
 
 export class SetReducerFlags {
-  addTagFlags: CallReducerFlags = 'FullUpdate';
-  addTag(flags: CallReducerFlags) {
-    this.addTagFlags = flags;
+  activateTagFlags: CallReducerFlags = 'FullUpdate';
+  activateTag(flags: CallReducerFlags) {
+    this.activateTagFlags = flags;
   }
 
   claimTagFlags: CallReducerFlags = 'FullUpdate';
@@ -304,24 +378,39 @@ export class SetReducerFlags {
     this.createGameFlags = flags;
   }
 
+  deleteGameCascadeFlags: CallReducerFlags = 'FullUpdate';
+  deleteGameCascade(flags: CallReducerFlags) {
+    this.deleteGameCascadeFlags = flags;
+  }
+
+  deletePlayerFlags: CallReducerFlags = 'FullUpdate';
+  deletePlayer(flags: CallReducerFlags) {
+    this.deletePlayerFlags = flags;
+  }
+
+  deleteProgressFlags: CallReducerFlags = 'FullUpdate';
+  deleteProgress(flags: CallReducerFlags) {
+    this.deleteProgressFlags = flags;
+  }
+
+  deleteTagFlags: CallReducerFlags = 'FullUpdate';
+  deleteTag(flags: CallReducerFlags) {
+    this.deleteTagFlags = flags;
+  }
+
   endGameFlags: CallReducerFlags = 'FullUpdate';
   endGame(flags: CallReducerFlags) {
     this.endGameFlags = flags;
   }
 
-  registerPlayerFlags: CallReducerFlags = 'FullUpdate';
-  registerPlayer(flags: CallReducerFlags) {
-    this.registerPlayerFlags = flags;
-  }
-
-  setTagActiveFlags: CallReducerFlags = 'FullUpdate';
-  setTagActive(flags: CallReducerFlags) {
-    this.setTagActiveFlags = flags;
-  }
-
   startGameFlags: CallReducerFlags = 'FullUpdate';
   startGame(flags: CallReducerFlags) {
     this.startGameFlags = flags;
+  }
+
+  upsertPlayerFlags: CallReducerFlags = 'FullUpdate';
+  upsertPlayer(flags: CallReducerFlags) {
+    this.upsertPlayerFlags = flags;
   }
 
 }

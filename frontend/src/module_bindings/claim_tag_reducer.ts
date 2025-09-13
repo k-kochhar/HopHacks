@@ -35,6 +35,7 @@ import {
 
 export type ClaimTag = {
   gameId: string,
+  playerId: string,
   tagId: string,
 };
 
@@ -49,6 +50,7 @@ export namespace ClaimTag {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("gameId", AlgebraicType.createStringType()),
+      new ProductTypeElement("playerId", AlgebraicType.createStringType()),
       new ProductTypeElement("tagId", AlgebraicType.createStringType()),
     ]);
   }

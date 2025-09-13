@@ -1,4 +1,4 @@
-use spacetimedb::{table, reducer, Table, ReducerContext, Timestamp};
+use spacetimedb::{table, reducer, Table, ReducerContext};
 
 // Games table: tracks game sessions
 #[table(name = games, public)]
@@ -6,8 +6,8 @@ pub struct Game {
     #[primary_key]
     game_id: String,
     status: String, // 'setup', 'active', 'ended'
-    started_at: Option<Timestamp>,
-    ended_at: Option<Timestamp>,
+    started_at: Option<i64>, // BIGINT timestamp
+    ended_at: Option<i64>,   // BIGINT timestamp
 }
 
 // Tags table: NFC tags that can be activated for games
@@ -18,7 +18,7 @@ pub struct Tag {
     game_id: String,
     is_active: bool,
     clue: Option<String>,
-    order_index: i32,
+    order_index: Option<i32>,
 }
 
 // Players table: registered players/teams
@@ -34,11 +34,10 @@ pub struct Player {
 #[table(name = progress, public)]
 pub struct Progress {
     #[primary_key]
-    progress_id: String, // Composite key: game_id + player_id + tag_id
     game_id: String,
     player_id: String,
     tag_id: String,
-    ts: Timestamp,
+    ts: i64, // BIGINT timestamp
 }
 
 // Reducer to create a new game
@@ -69,7 +68,7 @@ pub fn start_game(ctx: &ReducerContext, game_id: String) -> Result<(), String> {
         
         ctx.db.games().game_id().update(Game {
             status: "active".to_string(),
-            started_at: Some(ctx.timestamp),
+            started_at: Some(0), // TODO: Use proper timestamp
             ..game
         });
         
@@ -90,7 +89,7 @@ pub fn end_game(ctx: &ReducerContext, game_id: String) -> Result<(), String> {
         
         ctx.db.games().game_id().update(Game {
             status: "ended".to_string(),
-            ended_at: Some(ctx.timestamp),
+            ended_at: Some(0), // TODO: Use proper timestamp
             ..game
         });
         
@@ -101,65 +100,59 @@ pub fn end_game(ctx: &ReducerContext, game_id: String) -> Result<(), String> {
     }
 }
 
-// Reducer to add a tag to a game
+// Reducer to activate a tag (upsert with is_active=true)
 #[reducer]
-pub fn add_tag(ctx: &ReducerContext, tag_id: String, game_id: String, clue: Option<String>, order_index: i32) -> Result<(), String> {
+pub fn activate_tag(ctx: &ReducerContext, game_id: String, tag_id: String, clue: Option<String>, order_index: Option<i32>) -> Result<(), String> {
     if ctx.db.games().game_id().find(&game_id).is_none() {
         return Err("Game not found".to_string());
     }
     
-    if ctx.db.tags().tag_id().find(&tag_id).is_some() {
-        return Err("Tag with this ID already exists".to_string());
+    // Upsert tag - insert if doesn't exist, update if exists
+    if let Some(existing_tag) = ctx.db.tags().tag_id().find(&tag_id) {
+        ctx.db.tags().tag_id().update(Tag {
+            is_active: true,
+            clue: clue.or(existing_tag.clue),
+            order_index: order_index.or(existing_tag.order_index),
+            ..existing_tag
+        });
+    } else {
+        ctx.db.tags().insert(Tag {
+            tag_id: tag_id.clone(),
+            game_id,
+            is_active: true,
+            clue,
+            order_index,
+        });
     }
     
-    ctx.db.tags().insert(Tag {
-        tag_id: tag_id.clone(),
-        game_id,
-        is_active: false,
-        clue,
-        order_index,
-    });
-    
-    log::info!("Added tag: {}", tag_id);
+    log::info!("Activated tag: {}", tag_id);
     Ok(())
 }
 
-// Reducer to activate/deactivate a tag
+// Reducer to upsert a player (insert or update)
 #[reducer]
-pub fn set_tag_active(ctx: &ReducerContext, tag_id: String, is_active: bool) -> Result<(), String> {
-    if let Some(tag) = ctx.db.tags().tag_id().find(&tag_id) {
-        ctx.db.tags().tag_id().update(Tag {
-            is_active,
-            ..tag
+pub fn upsert_player(ctx: &ReducerContext, player_id: String, name: String, team: Option<String>) -> Result<(), String> {
+    if let Some(existing_player) = ctx.db.players().player_id().find(&player_id) {
+        ctx.db.players().player_id().update(Player {
+            name,
+            team,
+            ..existing_player
         });
-        
-        log::info!("Set tag {} active: {}", tag_id, is_active);
-        Ok(())
+        log::info!("Updated player: {}", player_id);
     } else {
-        Err("Tag not found".to_string())
+        ctx.db.players().insert(Player {
+            player_id: player_id.clone(),
+            name,
+            team,
+        });
+        log::info!("Created player: {}", player_id);
     }
-}
-
-// Reducer to register a player
-#[reducer]
-pub fn register_player(ctx: &ReducerContext, player_id: String, name: String, team: Option<String>) -> Result<(), String> {
-    if ctx.db.players().player_id().find(&player_id).is_some() {
-        return Err("Player with this ID already exists".to_string());
-    }
-    
-    ctx.db.players().insert(Player {
-        player_id: player_id.clone(),
-        name,
-        team,
-    });
-    
-    log::info!("Registered player: {}", player_id);
     Ok(())
 }
 
 // Reducer to claim a tag (this is what players will call when they tap an NFC tag)
 #[reducer]
-pub fn claim_tag(ctx: &ReducerContext, game_id: String, tag_id: String) -> Result<(), String> {
+pub fn claim_tag(ctx: &ReducerContext, game_id: String, player_id: String, tag_id: String) -> Result<(), String> {
     // Check if game exists and is active
     if let Some(game) = ctx.db.games().game_id().find(&game_id) {
         if game.status != "active" {
@@ -181,95 +174,163 @@ pub fn claim_tag(ctx: &ReducerContext, game_id: String, tag_id: String) -> Resul
         return Err("Tag not found".to_string());
     }
     
-    // For now, we'll use a placeholder player_id since we don't have authentication
-    // In a real app, you'd get this from the authenticated user
-    let player_id = format!("player_{}", ctx.sender.to_string());
-    
-    // Check if this player has already claimed this tag
-    let progress_id = format!("{}_{}_{}", game_id, player_id, tag_id);
-    if ctx.db.progress().progress_id().find(&progress_id).is_some() {
-        return Err("Tag already claimed by this player".to_string());
+    // Check if this player has already claimed this tag (ignore if already exists)
+    if ctx.db.progress().game_id().find(&game_id).is_some() {
+        // Check if this specific combination exists
+        let existing_progress = ctx.db.progress().iter()
+            .find(|p| p.game_id == game_id && p.player_id == player_id && p.tag_id == tag_id);
+        
+        if existing_progress.is_some() {
+            // Already claimed, ignore silently
+            return Ok(());
+        }
     }
     
     // Record the claim
     ctx.db.progress().insert(Progress {
-        progress_id: progress_id.clone(),
         game_id: game_id.clone(),
+        player_id: player_id.clone(),
         tag_id: tag_id.clone(),
-        player_id,
-        ts: ctx.timestamp,
+        ts: 0, // TODO: Use proper timestamp
     });
     
-    log::info!("Player claimed tag: {} in game: {}", tag_id, game_id);
+    log::info!("Player {} claimed tag: {} in game: {}", player_id, tag_id, game_id);
     Ok(())
 }
 
-// Reducer to delete a tag
+// Reducer to delete a tag and its progress entries
 #[reducer]
-pub fn delete_tag(ctx: &ReducerContext, tag_id: String) -> Result<(), String> {
-    if let Some(_tag) = ctx.db.tags().tag_id().find(&tag_id) {
-        ctx.db.tags().tag_id().delete(&tag_id);
-        log::info!("Deleted tag: {}", tag_id);
-        Ok(())
+pub fn delete_tag(ctx: &ReducerContext, game_id: String, tag_id: String) -> Result<(), String> {
+    // Check if tag exists for this game
+    if let Some(tag) = ctx.db.tags().tag_id().find(&tag_id) {
+        if tag.game_id != game_id {
+            return Err("Tag does not belong to this game".to_string());
+        }
     } else {
-        Err("Tag not found".to_string())
+        return Err("Tag not found".to_string());
     }
+    
+    // Delete all progress entries for this tag in this game
+    let progress_to_delete: Vec<_> = ctx.db.progress().iter()
+        .filter(|p| p.game_id == game_id && p.tag_id == tag_id)
+        .collect();
+    
+    for progress in progress_to_delete {
+        ctx.db.progress().delete(progress);
+    }
+    
+    // Delete the tag
+    if let Some(tag) = ctx.db.tags().tag_id().find(&tag_id) {
+        ctx.db.tags().delete(tag);
+    }
+    
+    log::info!("Deleted tag {} and its progress entries for game {}", tag_id, game_id);
+    Ok(())
 }
 
-// Reducer to delete a player
+// Reducer to delete a player's progress for a specific game
 #[reducer]
-pub fn delete_player(ctx: &ReducerContext, player_id: String) -> Result<(), String> {
-    if let Some(_player) = ctx.db.players().player_id().find(&player_id) {
-        ctx.db.players().player_id().delete(&player_id);
-        log::info!("Deleted player: {}", player_id);
-        Ok(())
-    } else {
-        Err("Player not found".to_string())
+pub fn delete_player(ctx: &ReducerContext, game_id: String, player_id: String) -> Result<(), String> {
+    // Check if game exists
+    if ctx.db.games().game_id().find(&game_id).is_none() {
+        return Err("Game not found".to_string());
     }
+    
+    // Delete all progress entries for this player in this game
+    let progress_to_delete: Vec<_> = ctx.db.progress().iter()
+        .filter(|p| p.game_id == game_id && p.player_id == player_id)
+        .collect();
+    
+    for progress in progress_to_delete {
+        ctx.db.progress().delete(progress);
+    }
+    
+    log::info!("Deleted player {} progress for game {}", player_id, game_id);
+    Ok(())
 }
 
-// Reducer to delete a game and all related data (cascade delete)
+// Reducer to delete a single progress entry
 #[reducer]
-pub fn delete_game(ctx: &ReducerContext, game_id: String) -> Result<(), String> {
-    if let Some(_game) = ctx.db.games().game_id().find(&game_id) {
-        // Delete all tags for this game
-        let tags_to_delete: Vec<String> = ctx.db.tags().iter()
-            .filter(|tag| tag.game_id == game_id)
-            .map(|tag| tag.tag_id.clone())
+pub fn delete_progress(ctx: &ReducerContext, game_id: String, player_id: String, tag_id: String) -> Result<(), String> {
+    // Check if the progress entry exists
+    let progress_exists = ctx.db.progress().iter()
+        .any(|p| p.game_id == game_id && p.player_id == player_id && p.tag_id == tag_id);
+    
+    if !progress_exists {
+        return Err("Progress entry not found".to_string());
+    }
+    
+    // Delete the specific progress entry
+    if let Some(progress) = ctx.db.progress().iter()
+        .find(|p| p.game_id == game_id && p.player_id == player_id && p.tag_id == tag_id) {
+        ctx.db.progress().delete(progress);
+    }
+    
+    log::info!("Deleted progress entry: game={}, player={}, tag={}", game_id, player_id, tag_id);
+    Ok(())
+}
+
+// Reducer to cascade delete a game and optionally orphaned players
+#[reducer]
+pub fn delete_game_cascade(ctx: &ReducerContext, game_id: String, delete_orphan_players: bool) -> Result<(), String> {
+    // Check if game exists
+    if ctx.db.games().game_id().find(&game_id).is_none() {
+        return Err("Game not found".to_string());
+    }
+    
+    // Count entries to be deleted for logging
+    let progress_count = ctx.db.progress().iter().filter(|p| p.game_id == game_id).count();
+    let tags_count = ctx.db.tags().iter().filter(|t| t.game_id == game_id).count();
+    
+    // Delete all progress entries for this game
+    let progress_to_delete: Vec<_> = ctx.db.progress().iter()
+        .filter(|p| p.game_id == game_id)
+        .collect();
+    
+    for progress in progress_to_delete {
+        ctx.db.progress().delete(progress);
+    }
+    
+    // Delete all tags for this game
+    let tags_to_delete: Vec<_> = ctx.db.tags().iter()
+        .filter(|t| t.game_id == game_id)
+        .collect();
+    
+    for tag in tags_to_delete {
+        ctx.db.tags().delete(tag);
+    }
+    
+    // Delete the game
+    if let Some(game) = ctx.db.games().game_id().find(&game_id) {
+        ctx.db.games().delete(game);
+    }
+    
+    // Optionally delete orphaned players (players with no remaining progress)
+    if delete_orphan_players {
+        let players_to_delete: Vec<_> = ctx.db.players().iter()
+            .filter(|player| {
+                // Check if this player has any remaining progress entries
+                !ctx.db.progress().iter().any(|p| p.player_id == player.player_id)
+            })
             .collect();
         
-        for tag_id in tags_to_delete {
-            ctx.db.tags().tag_id().delete(&tag_id);
-            log::info!("Deleted tag {} for game {}", tag_id, game_id);
+        let orphan_count = players_to_delete.len();
+        
+        for player in players_to_delete {
+            ctx.db.players().delete(player);
         }
         
-        // Delete all progress entries for this game
-        let progress_to_delete: Vec<String> = ctx.db.progress().iter()
-            .filter(|progress| progress.game_id == game_id)
-            .map(|progress| progress.progress_id.clone())
-            .collect();
-        
-        for progress_id in progress_to_delete {
-            ctx.db.progress().progress_id().delete(&progress_id);
-            log::info!("Deleted progress entry {} for game {}", progress_id, game_id);
-        }
-        
-        // Delete the game itself
-        ctx.db.games().game_id().delete(&game_id);
-        
-        log::info!("Deleted game and all related data: {}", game_id);
-        Ok(())
+        log::info!("Deleted game {} and {} orphaned players ({} progress, {} tags)", 
+                  game_id, orphan_count, progress_count, tags_count);
     } else {
-        Err("Game not found".to_string())
+        log::info!("Deleted game {} ({} progress, {} tags)", game_id, progress_count, tags_count);
     }
+    
+    Ok(())
 }
 
-
-// Initialize with some test data
+// Initialize the hunt module
 #[reducer(init)]
 pub fn init(_ctx: &ReducerContext) {
-    log::info!("Initializing scavenger hunt database");
-    
-    // This will be called when the module is first published
-    // We'll add some test data here
+    log::info!("Initializing hunt database");
 }

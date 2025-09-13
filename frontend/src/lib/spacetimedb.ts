@@ -1,15 +1,15 @@
 import { DbConnection } from '../module_bindings';
 
 // SpacetimeDB configuration
-const SPACETIMEDB_HOST = process.env.NEXT_PUBLIC_SPACETIMEDB_HOST || 'localhost:3000';
-const SPACETIMEDB_NAME = process.env.NEXT_PUBLIC_SPACETIMEDB_NAME || 'scavengerhunt';
+const SPACETIMEDB_URI = process.env.NEXT_PUBLIC_STDB_URI || 'ws://localhost:3000';
+const SPACETIMEDB_NAME = process.env.NEXT_PUBLIC_SPACETIMEDB_NAME || 'hunt';
 
 /**
  * Get or create the SpacetimeDB connection instance
  */
 export function getSpacetimeDBConnection(): DbConnection {
   const connection = DbConnection.builder()
-    .withUri(`ws://${SPACETIMEDB_HOST}`)
+    .withUri(SPACETIMEDB_URI)
     .withModuleName(SPACETIMEDB_NAME)
     .build();
   

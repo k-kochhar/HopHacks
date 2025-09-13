@@ -33,36 +33,34 @@ import {
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 
-export type AddTag = {
-  tagId: string,
+export type DeleteProgress = {
   gameId: string,
-  clue: string | undefined,
-  orderIndex: number,
+  playerId: string,
+  tagId: string,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace AddTag {
+export namespace DeleteProgress {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("tagId", AlgebraicType.createStringType()),
       new ProductTypeElement("gameId", AlgebraicType.createStringType()),
-      new ProductTypeElement("clue", AlgebraicType.createOptionType(AlgebraicType.createStringType())),
-      new ProductTypeElement("orderIndex", AlgebraicType.createI32Type()),
+      new ProductTypeElement("playerId", AlgebraicType.createStringType()),
+      new ProductTypeElement("tagId", AlgebraicType.createStringType()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: AddTag): void {
-    AddTag.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: DeleteProgress): void {
+    DeleteProgress.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): AddTag {
-    return AddTag.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): DeleteProgress {
+    return DeleteProgress.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }
