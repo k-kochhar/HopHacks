@@ -1,4 +1,4 @@
-# SpacetimeDB Setup Instructions
+# NFC Scavenger Hunt - Team Setup Instructions
 
 ## Prerequisites
 
@@ -33,151 +33,191 @@
    cd ..
    ```
 
-## 2. SpacetimeDB Server Setup
-
-1. **Build the SpacetimeDB module:**
-   ```bash
-   spacetime build --project-path server
-   ```
-
-2. **Start SpacetimeDB server:**
-   ```bash
-   spacetime start --in-memory
-   ```
-   This starts SpacetimeDB on `localhost:3000` with an in-memory database.
-
-3. **Publish the module:**
-   ```bash
-   spacetime publish scavengerhunt server/target/wasm32-unknown-unknown/release/spacetimedb_scavengerhunt.wasm
-   ```
-
-4. **Generate TypeScript bindings:**
-   ```bash
-   spacetime generate --lang typescript --out-dir frontend/src/module_bindings
-   ```
-
-## 3. Environment Configuration
+## 2. Environment Configuration
 
 Create a `.env.local` file in the `frontend/` directory:
 
 ```env
 # SpacetimeDB Configuration
-NEXT_PUBLIC_SPACETIMEDB_HOST=localhost:3000
-NEXT_PUBLIC_SPACETIMEDB_NAME=scavengerhunt
+NEXT_PUBLIC_STDB_URI=ws://localhost:3000
+NEXT_PUBLIC_SPACETIMEDB_NAME=hunt
+NEXT_PUBLIC_ORGANIZER_PASSWORD=ABC123
 ```
 
-## 4. Seed Test Data
+## 3. Running the System
 
-Run these commands to populate the database with test data:
+### Step 1: Start SpacetimeDB Server (Port 3000)
 
-```bash
-# Create a game
-spacetime call scavengerhunt create_game demo_game
-
-# Add tags to the game
-spacetime call scavengerhunt add_tag tag_001 demo_game '{"some": "Find the red door"}' 1
-spacetime call scavengerhunt add_tag tag_002 demo_game '{"some": "Look under the table"}' 2
-spacetime call scavengerhunt add_tag tag_003 demo_game '{"some": "Check the bookshelf"}' 3
-
-# Activate some tags
-spacetime call scavengerhunt set_tag_active tag_001 true
-spacetime call scavengerhunt set_tag_active tag_002 true
-
-# Register players
-spacetime call scavengerhunt register_player player_001 "Alice" '{"some": "Team Alpha"}'
-spacetime call scavengerhunt register_player player_002 "Bob" '{"some": "Team Beta"}'
-spacetime call scavengerhunt register_player player_003 "Charlie" '{"some": "Team Alpha"}'
-
-# Start the game
-spacetime call scavengerhunt start_game demo_game
-```
-
-## 5. Start the Frontend
-
-1. **Start Next.js development server:**
+1. **Navigate to server directory:**
    ```bash
-   cd frontend
-   PORT=3001 npm run dev
+   cd server
    ```
 
-2. **Visit the admin dashboard:**
-   - Go to `http://localhost:3001/admin`
-   - You should see live data from SpacetimeDB
+2. **Build the SpacetimeDB module:**
+   ```bash
+   spacetime build
+   ```
+
+3. **Start SpacetimeDB server:**
+   ```bash
+   spacetime start --in-memory
+   ```
+   This starts SpacetimeDB on `localhost:3000` with an in-memory database.
+
+4. **Publish the module:**
+   ```bash
+   spacetime publish hunt
+   ```
+
+5. **Generate TypeScript bindings:**
+   ```bash
+   spacetime generate --lang typescript --out-dir ../frontend/src/module_bindings
+   ```
+
+### Step 2: Start Frontend Server (Port 3001)
+
+1. **Open a new terminal and navigate to frontend:**
+   ```bash
+   cd frontend
+   ```
+
+2. **Start Next.js development server:**
+   ```bash
+   PORT=3001 npm run dev
+   ```
+   This will start the frontend on `localhost:3001`
+
+## 4. Accessing the Application
+
+- **Frontend (Players & Admin):** `http://localhost:3001`
+- **SpacetimeDB Server:** `http://localhost:3000`
+
+### Key Pages:
+- **Join Page:** `http://localhost:3001/join` - Create player accounts or access admin
+- **Admin Dashboard:** `http://localhost:3001/admin` - Manage games and tags (password: ABC123)
+- **Player Dashboard:** `http://localhost:3001/dashboard` - View progress and clues
+- **Tag Pages:** `http://localhost:3001/t/TAG001` - Individual tag interaction pages
+
+## 5. Game Flow & Usage
+
+### For Organizers:
+1. **Access Admin Dashboard:** Go to `http://localhost:3001/admin` (password: ABC123)
+2. **Create a New Game:** Click "Create New Game" - this wipes the database and starts fresh
+3. **Create Tags:** Use "Create Tag" to add tags with clues and order numbers
+4. **Activate Tags:** Scan NFC tags (e.g., `/t/TAG001`) and click "Activate Tag" to make them available
+5. **Start Game:** Click "Start Game" to begin the scavenger hunt
+
+### For Players:
+1. **Join Game:** Go to `http://localhost:3001/join` and create a player account
+2. **View Dashboard:** Access your dashboard at `http://localhost:3001/dashboard`
+3. **Find Tags:** Use clues to locate physical NFC tags
+4. **Claim Tags:** Scan NFC tags to claim them (must be done in order)
+5. **Track Progress:** Watch your progress update in real-time
 
 ## 6. Testing the Setup
 
-1. **Verify data is loading:**
-   - The admin dashboard should show the demo game, tags, and players
-   - Data should load without infinite loading screens
+1. **Verify servers are running:**
+   - SpacetimeDB: `http://localhost:3000` (should show SpacetimeDB interface)
+   - Frontend: `http://localhost:3001` (should show the app)
 
-2. **Test real-time updates:**
-   - Open another terminal and run:
-     ```bash
-     spacetime call scavengerhunt set_tag_active tag_003 true
-     ```
-   - Watch the admin dashboard update automatically
+2. **Test admin functionality:**
+   - Go to `http://localhost:3001/admin`
+   - Create a new game
+   - Create and activate some tags
+   - Start the game
 
-3. **Test delete functionality:**
-   - Click "Delete Game" on the demo_game
-   - Confirm the deletion
-   - Watch all related data disappear (cascade delete)
+3. **Test player functionality:**
+   - Go to `http://localhost:3001/join`
+   - Create a player account
+   - View the dashboard with clues
+   - Test tag claiming (simulate by going to `/t/TAG001`)
 
 ## 7. Database Schema Overview
 
-- **games**: Tracks game sessions (setup/active/ended)
-- **tags**: NFC tags that can be activated for games
-- **players**: Registered players/teams  
-- **progress**: Tracks which players have claimed which tags
+- **games**: Tracks game sessions (setup/active/ended) - only one active game at a time
+- **tags**: NFC tags with clues and order for sequential claiming
+- **players**: Registered players with names
+- **progress**: Tracks which players have claimed which tags in order
 
 ## 8. Available Reducers
 
-- `create_game(game_id)` - Create a new game
+- `create_game()` - Create a new game (wipes existing data)
 - `start_game(game_id)` - Start a game
 - `end_game(game_id)` - End a game
-- `add_tag(tag_id, game_id, clue, order_index)` - Add a tag to a game
-- `set_tag_active(tag_id, is_active)` - Activate/deactivate a tag
-- `register_player(player_id, name, team)` - Register a player
-- `claim_tag(game_id, tag_id)` - Claim a tag (for players)
-- `delete_tag(tag_id)` - Delete a tag
-- `delete_player(player_id)` - Delete a player
-- `delete_game(game_id)` - Delete a game and all related data
+- `create_tag(tag_id, game_id, order_index, clue)` - Create an inactive tag
+- `activate_tag(game_id, tag_id, order_index, clue)` - Activate a tag for the game
+- `upsert_player(player_id, name, role)` - Register/update a player
+- `claim_tag(game_id, player_id, tag_id)` - Claim a tag (sequential order required)
 
 ## 9. Troubleshooting
 
-**If you get "unsupported metadata version" error:**
+**If SpacetimeDB won't start:**
 ```bash
-rustup update
+# Kill any existing processes
+pkill -f spacetime
+# Clear port 3000
+lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+# Start fresh
 cd server
-cargo clean
-cd ..
-spacetime build --project-path server
+spacetime start --in-memory
 ```
 
 **If connection fails:**
-- Make sure SpacetimeDB is running: `spacetime start --in-memory`
-- Check the port isn't conflicting (SpacetimeDB uses 3000, Next.js uses 3001)
+- Make sure SpacetimeDB is running on port 3000: `lsof -i :3000`
+- Make sure Next.js is running on port 3001: `lsof -i :3001`
+- Check environment variables in `frontend/.env.local`
 - Verify the module is published: `spacetime list`
 
 **If data doesn't load:**
 - Check browser console for errors
 - Verify TypeScript bindings are generated: `ls frontend/src/module_bindings/`
 - Try refreshing the page
+- Check that both servers are running
+
+**If you get build errors:**
+```bash
+# Clean and rebuild
+cd server
+cargo clean
+spacetime build
+spacetime publish hunt
+spacetime generate --lang typescript --out-dir ../frontend/src/module_bindings
+```
 
 ## 10. Development Workflow
 
 1. **Make changes to Rust code** (`server/src/lib.rs`)
 2. **Rebuild and republish:**
    ```bash
-   spacetime build --project-path server
-   spacetime publish scavengerhunt server/target/wasm32-unknown-unknown/release/spacetimedb_scavengerhunt.wasm
-   spacetime generate --lang typescript --out-dir frontend/src/module_bindings
+   cd server
+   spacetime build
+   spacetime publish hunt
+   spacetime generate --lang typescript --out-dir ../frontend/src/module_bindings
    ```
 3. **Refresh the frontend** to see changes
 
-## 11. Production Deployment
+## 11. Quick Start Commands
 
-For production, you'll need to:
-1. Set up a persistent SpacetimeDB instance (not in-memory)
-2. Update environment variables with production URLs
-3. Deploy the frontend to Vercel/Netlify
-4. Configure proper CORS settings
+**Complete restart (if everything is broken):**
+```bash
+# Kill all processes
+pkill -f spacetime && pkill -f next
+
+# Start SpacetimeDB
+cd server
+spacetime start --in-memory &
+sleep 5
+spacetime publish hunt
+spacetime generate --lang typescript --out-dir ../frontend/src/module_bindings
+
+# Start Frontend (in new terminal)
+cd frontend
+npm run dev
+```
+
+**Check if everything is working:**
+```bash
+# Check servers
+curl -s http://localhost:3000/health
+curl -s http://localhost:3001 | head -5
+```
