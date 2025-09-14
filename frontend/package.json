@@ -15,7 +15,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-leaflet": "^5.0.0",
-    "undici": "^7.16.0"
+    "undici": "^6.21.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
