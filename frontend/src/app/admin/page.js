@@ -440,6 +440,12 @@ function AdminPageContent() {
   const currentGameProgress = currentGameId ? progress.filter(entry => entry.gameId === currentGameId) : progress;
   const leaderboard = groupLeaderboard(currentGameProgress);
 
+  // Helper function to get player name by ID
+  const getPlayerName = (playerId) => {
+    const player = players.find(p => p.playerId === playerId);
+    return player ? player.name : playerId; // Fallback to ID if name not found
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
@@ -650,7 +656,7 @@ function AdminPageContent() {
                 progress.filter(entry => currentGameId ? entry.gameId === currentGameId : true).slice(0, 8).map((entry, index) => (
                   <div key={`${entry.gameId}-${entry.playerId}-${entry.tagId}-${index}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-gray-900">{entry.playerId}</h3>
+                      <h3 className="font-semibold text-gray-900">{getPlayerName(entry.playerId)}</h3>
                       <span className="text-sm text-gray-500">
                         {formatTimestamp(entry.ts)}
                       </span>
@@ -692,7 +698,7 @@ function AdminPageContent() {
                       {index + 1}
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">{entry.playerId}</h3>
+                      <h3 className="font-semibold text-gray-900">{getPlayerName(entry.playerId)}</h3>
                       <p className="text-sm text-gray-500">Player</p>
                     </div>
                   </div>
