@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { ensureLeafletCss } from '../../(maps)/leaflet-setup';
 import { DEFAULT_LAT, DEFAULT_LON, toMeters } from '../../_lib/geo';
@@ -16,19 +16,11 @@ const Popup = dynamic(() => import('react-leaflet').then(m => m.Popup), { ssr: f
 export default function PlayerMap({ tags, progress, playerId }) {
   const [mapReady, setMapReady] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
-  const mapRef = useRef(null);
 
   useEffect(() => {
     ensureLeafletCss();
     // Small delay to ensure CSS is loaded
     setTimeout(() => setMapReady(true), 100);
-
-    // Cleanup function to prevent memory leaks
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-      }
-    };
   }, []);
 
   // Get visited tags for this player
@@ -83,40 +75,26 @@ export default function PlayerMap({ tags, progress, playerId }) {
 
   if (!mapReady) {
     return (
-      <div className="h-96 rounded-xl flex items-center justify-center" style={{backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB'}}>
-        <div style={{color: '#6B7280'}}>Loading map...</div>
-      </div>
-    );
-  }
-
-  // Show message if no accessible tags
-  if (activeTagsWithLocation.length === 0) {
-    return (
-      <div className="h-96 rounded-xl flex items-center justify-center" style={{backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB'}}>
-        <div className="text-center">
-          <div style={{color: '#6B7280', marginBottom: '8px'}}>No accessible tags to display</div>
-          <div className="text-sm" style={{color: '#6B7280'}}>Complete some tags to see them on the map!</div>
-        </div>
+      <div className="h-96 bg-gray-100 rounded border flex items-center justify-center">
+        <div className="text-gray-500">Loading map...</div>
       </div>
     );
   }
 
   return (
     <div>
-      <div className="h-96 rounded-xl overflow-hidden" style={{border: '1px solid #E5E7EB'}}>
+      <div className="h-96 rounded border">
         <MapErrorBoundary>
           <MapContainer
-            key={`player-map-${playerId}`}
             center={[DEFAULT_LAT, DEFAULT_LON]}
             zoom={15}
-            style={{ height: '100%', width: '100%', borderRadius: '12px' }}
-            ref={mapRef}
+            style={{ height: '100%', width: '100%' }}
           >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
-
+          
           {/* User location marker */}
           {userLocation && (
             <Marker position={[userLocation.lat, userLocation.lon]}>
@@ -127,13 +105,13 @@ export default function PlayerMap({ tags, progress, playerId }) {
               </Popup>
             </Marker>
           )}
-
+          
           {/* Tag markers */}
           {activeTagsWithLocation.map((tag) => {
             const isVisited = visitedTagIds.has(tag.tagId);
             return (
               <div key={tag.tagId}>
-                <Marker
+                <Marker 
                   position={[tag.lat, tag.lon]}
                   className={isVisited ? 'visited-marker' : 'unvisited-marker'}
                 >
@@ -141,26 +119,26 @@ export default function PlayerMap({ tags, progress, playerId }) {
                     <div className="text-sm">
                       <div className="font-semibold">Tag: {tag.tagId}</div>
                       {tag.clue && <div className="mt-1">Clue: {tag.clue}</div>}
-                      <div className="mt-1" style={{color: '#6B7280'}}>
+                      <div className="mt-1 text-gray-600">
                         {tag.lat.toFixed(5)}, {tag.lon.toFixed(5)}
                       </div>
-                      <div className="mt-1 text-xs" style={{color: isVisited ? '#059669' : '#6B7280'}}>
+                      <div className={`mt-1 text-xs ${isVisited ? 'text-green-600' : 'text-gray-500'}`}>
                         {isVisited ? '✓ Visited' : '• Not visited'}
                       </div>
                     </div>
                   </Popup>
                 </Marker>
-
+                
                 {/* Show accuracy circle if available */}
                 {tag.accuracyM && (
                   <Circle
                     center={[tag.lat, tag.lon]}
                     radius={tag.accuracyM}
                     pathOptions={{
-                      color: isVisited ? '#059669' : '#6B7280',
-                      fillColor: isVisited ? '#059669' : '#6B7280',
+                      color: isVisited ? '#10b981' : '#9ca3af',
+                      fillColor: isVisited ? '#10b981' : '#9ca3af',
                       fillOpacity: 0.1,
-                      weight: 0.5
+                      weight: 1
                     }}
                   />
                 )}
