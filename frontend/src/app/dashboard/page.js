@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSpacetimeDBConnection } from '../../lib/spacetimedb';
 import { getPlayerData, getRole } from '../../lib/localStorage';
+import { groupLeaderboard } from '../../lib/utils';
 import PlayerMap from './components/PlayerMap';
 
 export default function PlayerDashboard() {
@@ -12,6 +13,7 @@ export default function PlayerDashboard() {
   const [loading, setLoading] = useState(true);
   const [tags, setTags] = useState([]);
   const [progress, setProgress] = useState([]);
+  const [players, setPlayers] = useState([]);
   const [currentGame, setCurrentGame] = useState(null);
   const [playerData, setPlayerData] = useState(null);
 
@@ -70,7 +72,8 @@ export default function PlayerDashboard() {
           .subscribe([
             'SELECT * FROM games',
             'SELECT * FROM tags',
-            'SELECT * FROM progress'
+            'SELECT * FROM progress',
+            'SELECT * FROM players'
           ]);
 
         console.log('Dashboard: Subscription created');
@@ -142,6 +145,27 @@ export default function PlayerDashboard() {
           setCurrentGame(newRow);
         });
 
+        // Players table callbacks (insert, delete - no updates)
+        conn.db.players.onInsert((_ctx, row) => {
+          console.log('Dashboard: Player inserted:', row);
+          setPlayers(prev => {
+            // Check if player already exists to prevent duplicates
+            const exists = prev.some(p => p.playerId === row.playerId);
+            if (exists) {
+              console.log('Dashboard: Player already exists, replacing:', row.playerId);
+              return prev.map(p => p.playerId === row.playerId ? row : p);
+            } else {
+              console.log('Dashboard: Adding new player:', row.playerId);
+              return [...prev, row];
+            }
+          });
+        });
+        
+        conn.db.players.onDelete((_ctx, row) => {
+          console.log('Dashboard: Player deleted:', row);
+          setPlayers(prev => prev.filter(p => p.playerId !== row.playerId));
+        });
+
         // Initial data load
         refreshData(conn, player.playerId);
       } catch (err) {
@@ -178,6 +202,10 @@ export default function PlayerDashboard() {
         const playerProgress = conn.db.progress.iter()
           .filter(p => p.gameId === gameId && p.playerId === playerId);
         setProgress([...playerProgress]);
+
+        // Get all players
+        const allPlayers = conn.db.players.iter();
+        setPlayers([...allPlayers]);
       }
     } catch (error) {
       console.error('Error refreshing data:', error);
@@ -208,6 +236,16 @@ export default function PlayerDashboard() {
   const canAccessTag = (tag) => {
     // Only show completed tags
     return getTagStatus(tag.tagId) === 'completed';
+  };
+
+  // Generate leaderboard from progress data for current game
+  const currentGameProgress = currentGame ? progress.filter(entry => entry.gameId === currentGame.gameId) : progress;
+  const leaderboard = groupLeaderboard(currentGameProgress);
+
+  // Helper function to get player name by ID
+  const getPlayerName = (playerId) => {
+    const player = players.find(p => p.playerId === playerId);
+    return player ? player.name : playerId; // Fallback to ID if name not found
   };
 
   // Removed handleTagClick - players should not be able to directly access tag pages
@@ -398,6 +436,66 @@ export default function PlayerDashboard() {
             progress={progress}
             playerId={playerData?.playerId}
           />
+        </div>
+
+        {/* Leaderboard Section */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mt-6" style={{boxShadow: '0 4px 12px rgba(0,0,0,0.08)'}}>
+          <h2 className="text-xl font-bold mb-4" style={{color: '#2563EB'}}>Leaderboard</h2>
+          {leaderboard && leaderboard.length > 0 ? (
+            <div className="space-y-3">
+              {leaderboard.map((entry, index) => {
+                const isCurrentPlayer = entry.playerId === playerData?.playerId;
+                return (
+                  <div 
+                    key={entry.playerId} 
+                    className={`flex items-center justify-between p-3 rounded-lg ${
+                      isCurrentPlayer 
+                        ? 'bg-blue-50 border-2 border-blue-200' 
+                        : 'bg-gray-50 border border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div 
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                          index === 0 ? 'bg-yellow-500' :
+                          index === 1 ? 'bg-gray-400' :
+                          index === 2 ? 'bg-orange-500' : 'bg-blue-500'
+                        }`}
+                      >
+                        {index + 1}
+                      </div>
+                      <div>
+                        <h3 className={`font-semibold ${
+                          isCurrentPlayer ? 'text-blue-700' : 'text-gray-900'
+                        }`}>
+                          {getPlayerName(entry.playerId)}
+                          {isCurrentPlayer && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">You</span>}
+                        </h3>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-lg font-bold ${
+                        isCurrentPlayer ? 'text-blue-700' : 'text-gray-900'
+                      }`}>
+                        {entry.count}
+                      </p>
+                      <p className="text-xs text-gray-500">tags</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="text-gray-400 mb-2">
+                <svg className="w-12 h-12 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold mb-2" style={{color: '#6B7280'}}>No Players Yet</h3>
+              <p style={{color: '#6B7280'}}>The leaderboard will appear once players start claiming tags.</p>
+            </div>
+          )}
         </div>
 
         {/* Game Complete */}

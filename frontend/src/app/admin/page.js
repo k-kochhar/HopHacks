@@ -668,7 +668,7 @@ function AdminPageContent() {
                   + Add
                 </button>
               </div>
-              <div className="overflow-y-auto flex-1 mt-3" style={{minHeight: 0}}>
+              <div className="overflow-y-auto flex-1 mt-3 pr-2 scrollable-content" style={{minHeight: 0, maxHeight: '120px'}}>
                 {players && players.length > 0 ? (
                   <div className="space-y-1">
                     {players.map((player, index) => (
