@@ -1,9 +1,0 @@
-/Users/williamlin/scavenger-hunt/target/debug/deps/spacetimedb_primitives-4e3f7a51feb9d3f7.d: /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-primitives-1.3.2/src/lib.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-primitives-1.3.2/src/attr.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-primitives-1.3.2/src/col_list.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-primitives-1.3.2/src/errno.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-primitives-1.3.2/src/ids.rs
-
-/Users/williamlin/scavenger-hunt/target/debug/deps/libspacetimedb_primitives-4e3f7a51feb9d3f7.rmeta: /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-primitives-1.3.2/src/lib.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-primitives-1.3.2/src/attr.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-primitives-1.3.2/src/col_list.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-primitives-1.3.2/src/errno.rs /Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-primitives-1.3.2/src/ids.rs
-
-/Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-primitives-1.3.2/src/lib.rs:
-/Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-primitives-1.3.2/src/attr.rs:
-/Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-primitives-1.3.2/src/col_list.rs:
-/Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-primitives-1.3.2/src/errno.rs:
-/Users/williamlin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spacetimedb-primitives-1.3.2/src/ids.rs:
