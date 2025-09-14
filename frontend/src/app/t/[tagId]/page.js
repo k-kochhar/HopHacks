@@ -268,6 +268,33 @@ export default function TagPage() {
   const playerClaimCount = playerData ? countPlayerClaims(progress, playerData.playerId) : 0;
   const totalActiveTags = currentGameId ? tags.filter(tag => tag.gameId === currentGameId && tag.isActive).length : 0;
   
+  // Check if player can claim this tag (has claimed all previous tags in order)
+  const canClaimTag = () => {
+    if (!playerData || !currentGameId || !currentTag) return false;
+    
+    // Get all active tags for this game, sorted by order
+    const activeTags = tags
+      .filter(tag => tag.gameId === currentGameId && tag.isActive)
+      .sort((a, b) => a.orderIndex - b.orderIndex);
+    
+    // Find the current tag's position
+    const currentTagIndex = activeTags.findIndex(tag => tag.tagId === tagId);
+    if (currentTagIndex === -1) return false;
+    
+    // Check if player has claimed all previous tags
+    for (let i = 0; i < currentTagIndex; i++) {
+      const previousTag = activeTags[i];
+      const hasClaimedPrevious = hasPlayerClaimedTag(progress, playerData.playerId, previousTag.tagId, currentGameId);
+      if (!hasClaimedPrevious) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
+  
+  const playerCanClaimTag = canClaimTag();
+  
 
   useEffect(() => {
     // Get user data from localStorage
@@ -458,6 +485,12 @@ export default function TagPage() {
   const handleClaimTag = async () => {
     if (!currentGameId) {
       setMessage('No game selected');
+      return;
+    }
+    
+    // Check if player can claim this tag (order validation)
+    if (!playerCanClaimTag) {
+      setMessage('❌ You must claim the previous tags in order first!');
       return;
     }
     
@@ -740,12 +773,41 @@ export default function TagPage() {
                   <p className="text-gray-600 mb-4">This tag is active and ready to be claimed.</p>
                 </div>
                 
+                {!playerCanClaimTag && (
+                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <p className="text-yellow-800 text-sm">
+                      ⚠️ You must claim the previous tags in order first! Complete the earlier tags before claiming this one.
+                    </p>
+                    {(() => {
+                      // Find the next tag the player should claim
+                      const activeTags = tags
+                        .filter(tag => tag.gameId === currentGameId && tag.isActive)
+                        .sort((a, b) => a.orderIndex - b.orderIndex);
+                      
+                      const nextTag = activeTags.find(tag => 
+                        !hasPlayerClaimedTag(progress, playerData.playerId, tag.tagId, currentGameId)
+                      );
+                      
+                      return nextTag ? (
+                        <p className="text-yellow-700 text-xs mt-1">
+                          Next tag to claim: <span className="font-semibold">{nextTag.tagId}</span>
+                        </p>
+                      ) : null;
+                    })()}
+                  </div>
+                )}
+                
                 <button
                   onClick={handleClaimTag}
-                  disabled={actionLoading}
-                  className="w-full bg-green-600 text-white py-3 px-4 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-medium"
+                  disabled={actionLoading || !playerCanClaimTag}
+                  className={`w-full py-3 px-4 rounded-md text-lg font-medium ${
+                    playerCanClaimTag 
+                      ? 'bg-green-600 text-white hover:bg-green-700' 
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  {actionLoading ? 'Claiming...' : 'Claim This Tag!'}
+                  {actionLoading ? 'Claiming...' : 
+                   playerCanClaimTag ? 'Claim This Tag!' : 'Complete Previous Tags First'}
                 </button>
               </div>
             )}

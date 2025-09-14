@@ -187,7 +187,7 @@ export default function PlayerDashboard() {
   };
 
   const getTagStatus = (tagId) => {
-    const tagProgress = progress.find(p => p.tagId === tagId);
+    const tagProgress = progress.find(p => p.tagId === tagId && p.playerId === playerData?.playerId);
     return tagProgress ? 'completed' : 'pending';
   };
 
@@ -226,7 +226,7 @@ export default function PlayerDashboard() {
     );
   }
 
-  const completedCount = progress.length;
+  const completedCount = progress.filter(p => p.playerId === playerData?.playerId).length;
   const totalTags = tags.length;
   const unlockedTags = tags.filter(tag => canAccessTag(tag));
   const lockedTags = totalTags - unlockedTags.length;

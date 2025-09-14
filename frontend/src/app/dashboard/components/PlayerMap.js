@@ -36,7 +36,7 @@ export default function PlayerMap({ tags, progress, playerId }) {
 
   // Helper function to get tag status
   const getTagStatus = (tagId) => {
-    const tagProgress = progress.find(p => p.tagId === tagId);
+    const tagProgress = progress.find(p => p.tagId === tagId && p.playerId === playerId);
     return tagProgress ? 'completed' : 'pending';
   };
 
