@@ -133,7 +133,7 @@ function AdminPageContent() {
         // Set up table callbacks for real-time updates
         console.log('Setting up table callbacks...');
         
-        // Games table callbacks (delete + insert pattern, no updates)
+        // Games table callbacks (insert, update, delete)
         conn.db.games.onInsert((_ctx, row) => {
           console.log('Admin: Game inserted:', row);
           setGames(prev => {
@@ -150,12 +150,17 @@ function AdminPageContent() {
           setCurrentGameId(row.gameId);
         });
         
+        conn.db.games.onUpdate((_ctx, oldRow, newRow) => {
+          console.log('Admin: Game updated:', oldRow.gameId, '->', newRow);
+          setGames(prev => prev.map(g => g.gameId === oldRow.gameId ? newRow : g));
+        });
+        
         conn.db.games.onDelete((_ctx, row) => {
           console.log('Admin: Game deleted:', row);
           setGames(prev => prev.filter(g => g.gameId !== row.gameId));
         });
 
-        // Tags table callbacks (delete + insert pattern, no updates)
+        // Tags table callbacks (insert, update, delete)
         conn.db.tags.onInsert((_ctx, row) => {
           console.log('Admin: Tag inserted:', row);
           setTags(prev => {
@@ -169,6 +174,11 @@ function AdminPageContent() {
               return [...prev, row];
             }
           });
+        });
+        
+        conn.db.tags.onUpdate((_ctx, oldRow, newRow) => {
+          console.log('Admin: Tag updated:', oldRow.tagId, '->', newRow);
+          setTags(prev => prev.map(t => t.tagId === oldRow.tagId ? newRow : t));
         });
         
         conn.db.tags.onDelete((_ctx, row) => {

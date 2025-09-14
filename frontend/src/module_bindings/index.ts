@@ -78,6 +78,11 @@ const REMOTE_MODULE = {
     games: {
       tableName: "games",
       rowType: Game.getTypeScriptAlgebraicType(),
+      primaryKey: "gameId",
+      primaryKeyInfo: {
+        colName: "gameId",
+        colType: Game.getTypeScriptAlgebraicType().product.elements[0].algebraicType,
+      },
     },
     players: {
       tableName: "players",

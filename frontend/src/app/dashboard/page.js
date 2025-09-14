@@ -78,7 +78,7 @@ export default function PlayerDashboard() {
         // Set up table callbacks for real-time updates
         console.log('Dashboard: Setting up table callbacks...');
         
-        // Tags table callbacks (delete + insert pattern, no updates)
+        // Tags table callbacks (insert, update, delete)
         conn.db.tags.onInsert((_ctx, row) => {
           console.log('Dashboard: Tag inserted:', row);
           setTags(prev => {
@@ -92,6 +92,11 @@ export default function PlayerDashboard() {
               return [...prev, row];
             }
           });
+        });
+        
+        conn.db.tags.onUpdate((_ctx, oldRow, newRow) => {
+          console.log('Dashboard: Tag updated:', oldRow.tagId, '->', newRow);
+          setTags(prev => prev.map(t => t.tagId === oldRow.tagId ? newRow : t));
         });
         
         conn.db.tags.onDelete((_ctx, row) => {
@@ -126,10 +131,15 @@ export default function PlayerDashboard() {
           ));
         });
 
-        // Games table callbacks (delete + insert pattern, no updates)
+        // Games table callbacks (insert, update)
         conn.db.games.onInsert((_ctx, row) => {
           console.log('Dashboard: Game inserted:', row);
           setCurrentGame(row);
+        });
+        
+        conn.db.games.onUpdate((_ctx, oldRow, newRow) => {
+          console.log('Dashboard: Game updated:', oldRow.gameId, '->', newRow);
+          setCurrentGame(newRow);
         });
 
         // Initial data load

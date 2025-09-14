@@ -3,6 +3,7 @@ use spacetimedb::{Table, ReducerContext, table, reducer};
 // Simple game table - only one active game at a time
 #[table(name = games, public)]
 pub struct Game {
+    #[primary_key]
     game_id: String,
     status: String, // 'setup' | 'active' | 'ended'
 }

@@ -154,7 +154,7 @@ export default function TagPage() {
           }
         };
         
-        // Games table callbacks (delete + insert pattern, no updates)
+        // Games table callbacks (insert, update, delete)
         connection.db.games.onInsert((_ctx, row) => {
           console.log('Tag page: Game inserted:', row);
           setGames(prev => {
@@ -170,8 +170,13 @@ export default function TagPage() {
           });
           setCurrentGameId(row.gameId);
         });
+        
+        connection.db.games.onUpdate((_ctx, oldRow, newRow) => {
+          console.log('Tag page: Game updated:', oldRow.gameId, '->', newRow);
+          setGames(prev => prev.map(g => g.gameId === oldRow.gameId ? newRow : g));
+        });
 
-        // Tags table callbacks (delete + insert pattern, no updates)
+        // Tags table callbacks (insert, update, delete)
         connection.db.tags.onInsert((_ctx, row) => {
           console.log('Tag page: Tag inserted:', row);
           setTags(prev => {
@@ -185,6 +190,11 @@ export default function TagPage() {
               return [...prev, row];
             }
           });
+        });
+        
+        connection.db.tags.onUpdate((_ctx, oldRow, newRow) => {
+          console.log('Tag page: Tag updated:', oldRow.tagId, '->', newRow);
+          setTags(prev => prev.map(t => t.tagId === oldRow.tagId ? newRow : t));
         });
         
         connection.db.tags.onDelete((_ctx, row) => {
