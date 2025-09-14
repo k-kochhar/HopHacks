@@ -71,7 +71,7 @@ NEXT_PUBLIC_ORGANIZER_PASSWORD=ABC123
 
 5. **Generate TypeScript bindings:**
    ```bash
-   spacetime generate --lang typescript --out-dir ../frontend/src/module_bindings
+   spacetime generate --lang typescript --out-dir ../frontend/src/app/module_bindings
    ```
 
 ### Step 2: Start Frontend Server (Port 3001)
