@@ -58,6 +58,8 @@ function AdminPageContent() {
         console.log('Connection object created:', conn);
         console.log('Connection URI:', process.env.NEXT_PUBLIC_STDB_URI || 'ws://localhost:3000');
         console.log('Connection module name:', process.env.NEXT_PUBLIC_SPACETIMEDB_NAME || 'hunt');
+        console.log('Connection reducers available:', Object.keys(conn.reducers || {}));
+        console.log('Connection db available:', !!conn.db);
         
         // Set connection in state so other functions can access it
         setConnection(conn);
@@ -259,29 +261,56 @@ function AdminPageContent() {
       }
       
       // Use the SpacetimeDB client's reducers
+      console.log('Calling reducer:', reducerName, 'with args:', args);
+      console.log('Connection reducers available:', Object.keys(connection.reducers || {}));
+      
       switch (reducerName) {
         case 'create_game':
+          if (!connection.reducers.createGame) {
+            throw new Error('createGame reducer not found');
+          }
           connection.reducers.createGame(args[0]);
           break;
         case 'start_game':
+          if (!connection.reducers.startGame) {
+            throw new Error('startGame reducer not found');
+          }
           connection.reducers.startGame(args[0]);
           break;
         case 'end_game':
+          if (!connection.reducers.endGame) {
+            throw new Error('endGame reducer not found');
+          }
           connection.reducers.endGame(args[0]);
           break;
         case 'create_tag':
+          if (!connection.reducers.createTag) {
+            throw new Error('createTag reducer not found');
+          }
           connection.reducers.createTag(args[0], args[1], args[2], args[3]);
           break;
         case 'activate_tag':
+          if (!connection.reducers.activateTag) {
+            throw new Error('activateTag reducer not found');
+          }
           connection.reducers.activateTag(args[0], args[1], args[2], args[3]);
           break;
         case 'claim_tag':
+          if (!connection.reducers.claimTag) {
+            throw new Error('claimTag reducer not found');
+          }
           connection.reducers.claimTag(args[0], args[1], args[2]);
           break;
         case 'upsert_player':
+          if (!connection.reducers.upsertPlayer) {
+            throw new Error('upsertPlayer reducer not found');
+          }
           connection.reducers.upsertPlayer(args[0], args[1], args[2]);
           break;
         case 'delete_tag':
+          if (!connection.reducers.deleteTag) {
+            throw new Error('deleteTag reducer not found');
+          }
           connection.reducers.deleteTag(args[0]);
           break;
         default:
@@ -599,7 +628,7 @@ function AdminPageContent() {
               <h3 className="text-sm font-bold" style={{color: '#4F46E5'}}>
                 LEADERBOARD ({leaderboard.length})
               </h3>
-              <div className="mt-3">
+              <div className="mt-3 scrollable-content" style={{minHeight: 0, maxHeight: '120px'}}>
                 {leaderboard && leaderboard.length > 0 ? (
                   <div className="space-y-2">
                     {leaderboard.slice(0, 4).map((entry, index) => (
@@ -629,7 +658,7 @@ function AdminPageContent() {
             {/* Recent Activity Section */}
             <div className="p-4 border-t" style={{borderColor: '#E5E7EB'}}>
               <h3 className="text-sm font-bold" style={{color: '#4F46E5'}}>RECENT ACTIVITY</h3>
-              <div className="mt-3">
+              <div className="mt-3 scrollable-content" style={{minHeight: 0, maxHeight: '120px'}}>
                 {progress && progress.length > 0 ? (
                   <div className="space-y-2">
                     {progress
