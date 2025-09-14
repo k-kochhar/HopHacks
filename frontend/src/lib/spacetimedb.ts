@@ -1,4 +1,4 @@
-import { DbConnection } from '../module_bindings';
+import { DbConnection } from '../app/module_bindings';
 
 // SpacetimeDB configuration
 const SPACETIMEDB_URI = process.env.NEXT_PUBLIC_STDB_URI || 'ws://localhost:3000';
@@ -18,4 +18,4 @@ export function getSpacetimeDBConnection(): DbConnection {
 }
 
 // Re-export types from generated bindings
-export { Game, Tag, Player, Progress } from '../module_bindings';
+export { Game, Tag, Player, Progress } from '../app/module_bindings';

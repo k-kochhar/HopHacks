@@ -135,7 +135,7 @@ export default function TagPage() {
                 connection.reducers.activateTag(args[0], args[1], args[2], args[3]);
                 break;
               case 'activate_tag_with_location':
-                connection.reducers.activateTagWithLocation(args[0], args[1], args[2], args[3], args[4], args[5]);
+                connection.reducers.activateTagWithLocation(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
                 break;
               case 'claim_tag':
                 connection.reducers.claimTag(args[0], args[1], args[2]);
@@ -319,7 +319,10 @@ export default function TagPage() {
       connection.reducers.activateTag(currentGameId, tagId, existingOrder, existingClue);
       
       setMessage('Tag activated successfully! ✅');
-      setTimeout(() => setMessage(''), 3000);
+      setTimeout(() => {
+        setMessage('');
+        router.push('/admin');
+      }, 1500);
     } catch (error) {
       console.error('Error activating tag:', error);
       setMessage(`Failed to activate tag: ${error.message}`);
@@ -383,7 +386,10 @@ export default function TagPage() {
       connection.reducers.activateTagWithLocation(currentGameId, tagId, latitude, longitude, Math.round(accuracy), 'admin', existingOrder, existingClue);
       
       setMessage('Tag activated with location! ✅');
-      setTimeout(() => setMessage(''), 3000);
+      setTimeout(() => {
+        setMessage('');
+        router.push('/admin');
+      }, 1500);
     } catch (error) {
       console.error('Geolocation error:', error);
       
@@ -436,7 +442,10 @@ export default function TagPage() {
       connection.reducers.activateTagWithLocation(currentGameId, tagId, lat, lon, 0, 'admin', existingOrder, existingClue);
       
       setMessage('Tag activated with location! ✅');
-      setTimeout(() => setMessage(''), 3000);
+      setTimeout(() => {
+        setMessage('');
+        router.push('/admin');
+      }, 1500);
     } catch (error) {
       console.error('Error activating tag with location:', error);
       setMessage(`Failed to activate tag: ${error.message}`);
@@ -480,7 +489,10 @@ export default function TagPage() {
       connection.reducers.claimTag(currentGameId, playerData.playerId, tagId);
       
       setMessage(`Tag claimed successfully! 🎉 You now have ${playerClaimCount + 1}/${totalActiveTags} tags.`);
-      setTimeout(() => setMessage(''), 3000);
+      setTimeout(() => {
+        setMessage('');
+        router.push('/dashboard');
+      }, 1500);
     } catch (error) {
       console.error('Error claiming tag:', error);
       setMessage(`Failed to claim tag: ${error.message}`);

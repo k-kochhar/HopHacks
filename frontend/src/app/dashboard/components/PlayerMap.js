@@ -83,33 +83,6 @@ export default function PlayerMap({ tags, progress, playerId }) {
 
   return (
     <div>
-      {/* Legend and Controls */}
-      <div className="mb-4 flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-          <span className="text-sm">✓ visited</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-gray-400 rounded-full"></div>
-          <span className="text-sm">• unvisited</span>
-        </div>
-        
-        {!userLocation && (
-          <button
-            onClick={requestLocation}
-            className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200"
-          >
-            📍 Show my location
-          </button>
-        )}
-        
-        {nearestUnvisited && (
-          <div className="text-sm text-gray-600">
-            Nearest next: <span className="font-semibold">{nearestUnvisited.tagId}</span> – {Math.round(nearestUnvisited.distance)}m
-          </div>
-        )}
-      </div>
-
       <div className="h-96 rounded border">
         <MapErrorBoundary>
           <MapContainer

@@ -531,13 +531,9 @@ function AdminPageContent() {
             </div>
           </div>
           {currentGame ? (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-gray-50 rounded-lg p-4">
                 <span className="text-sm font-medium text-gray-500">Game Status</span>
-                <p className="text-lg font-semibold text-gray-900 mt-1 capitalize">{currentGame.status}</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <span className="text-sm font-medium text-gray-500">Status</span>
                 <p className={`text-lg font-semibold mt-1 ${
                   currentGame.status === 'active' ? 'text-green-600' : 
                   currentGame.status === 'setup' ? 'text-yellow-600' : 'text-red-600'
@@ -572,12 +568,6 @@ function AdminPageContent() {
                   className="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200 transition-colors"
                 >
                   Create Tag
-                </button>
-                <button
-                  onClick={activateTag}
-                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200 transition-colors"
-                >
-                  Activate Tag
                 </button>
               </div>
             </div>
@@ -737,10 +727,6 @@ function AdminPageContent() {
                       <span className="text-gray-500">ID:</span>
                       <span className="ml-2 font-medium">{player.playerId}</span>
                     </div>
-                    <div>
-                      <span className="text-gray-500">Team:</span>
-                      <span className="ml-2 font-medium text-blue-600">{formatTeam(player.team)}</span>
-                    </div>
                   </div>
                 </div>
               ))
@@ -752,43 +738,11 @@ function AdminPageContent() {
           </div>
         </div>
 
-        {/* Progress (Debug) Section */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mt-8 border border-gray-200">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">🔍 Progress (Debug)</h2>
-          <div className="space-y-3">
-            {progress && progress.length > 0 ? (
-              progress.filter(entry => currentGameId ? entry.gameId === currentGameId : true).slice(0, 10).map((entry, index) => (
-                <div key={`${entry.playerId}-${entry.tagId}-${index}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="text-sm">
-                      <span className="font-medium text-gray-900">{entry.playerId}</span>
-                      <span className="text-gray-500 mx-2">→</span>
-                      <span className="font-medium text-gray-900">{entry.tagId}</span>
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {formatTimestamp(entry.ts)}
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <p>No progress entries yet</p>
-              </div>
-            )}
-            {progress && progress.length > 10 && (
-              <div className="text-center text-sm text-gray-500">
-                Showing first 10 of {progress.length} entries
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Connection Status */}
         <div className="mt-8 text-center">
           <div className="inline-flex items-center px-6 py-3 bg-green-100 text-green-800 rounded-xl shadow-sm">
             <div className="w-3 h-3 bg-green-500 rounded-full mr-3 animate-pulse"></div>
-            <span className="font-medium">Connected to SpacetimeDB - Data updates in real-time</span>
+            <span className="font-medium">Connected to SpacetimeDB</span>
           </div>
         </div>
       </div>
