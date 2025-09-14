@@ -187,14 +187,22 @@ export default function PlayerDashboard() {
   };
 
   const getTagStatus = (tagId) => {
-    const tagProgress = progress.find(p => p.tagId === tagId && p.playerId === playerData?.playerId);
+    if (!progress || !playerData?.playerId) return 'pending';
+    const tagProgress = progress.find(p =>
+      String(p.tagId) === String(tagId) &&
+      String(p.playerId) === String(playerData.playerId)
+    );
     return tagProgress ? 'completed' : 'pending';
   };
 
   const getNextTagToFind = () => {
+    if (!tags.length || !playerData?.playerId) return null;
+
     // Find the first tag that hasn't been completed
     const sortedTags = [...tags].sort((a, b) => a.orderIndex - b.orderIndex);
-    return sortedTags.find(tag => getTagStatus(tag.tagId) === 'pending');
+    const nextTag = sortedTags.find(tag => getTagStatus(tag.tagId) === 'pending');
+
+    return nextTag;
   };
 
   const canAccessTag = (tag) => {
@@ -206,10 +214,10 @@ export default function PlayerDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#F9FAFB'}}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading dashboard...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto" style={{borderColor: '#2563EB'}}></div>
+          <p className="mt-2" style={{color: '#6B7280'}}>Loading dashboard...</p>
         </div>
       </div>
     );
@@ -217,10 +225,10 @@ export default function PlayerDashboard() {
 
   if (!currentGame) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#F9FAFB'}}>
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">No Active Game</h1>
-          <p className="text-gray-600">There&apos;s no active game at the moment. Check back later!</p>
+          <h1 className="text-2xl font-bold mb-4" style={{color: '#2563EB'}}>No Active Game</h1>
+          <p style={{color: '#6B7280'}}>There&apos;s no active game at the moment. Check back later!</p>
         </div>
       </div>
     );
@@ -233,37 +241,54 @@ export default function PlayerDashboard() {
   const nextTag = getNextTagToFind();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{backgroundColor: '#F9FAFB'}}>
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome, {playerData?.name}!
-          </h1>
-          <p className="text-gray-600">
-            Game Status: <span className="font-semibold text-green-600">{currentGame.status}</span>
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6" style={{boxShadow: '0 4px 12px rgba(0,0,0,0.08)'}}>
+          <div className="flex items-center space-x-3 mb-4">
+            <img
+              src="/logo.png"
+              alt="HopQuest Logo"
+              className="h-8 w-8 object-contain"
+              onError={e => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{display: 'none', backgroundColor: '#2563EB'}}>
+              HQ
+            </div>
+            <h1 className="text-3xl font-bold" style={{color: '#2563EB'}}>
+              Welcome, {playerData?.name}!
+            </h1>
+          </div>
+          <p style={{color: '#6B7280'}}>
+            Game Status: <span className="font-semibold" style={{color: '#059669'}}>{currentGame.status}</span>
           </p>
           <div className="mt-4">
-            <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+            <div className="flex items-center justify-between text-sm mb-2" style={{color: '#6B7280'}}>
               <span>Progress</span>
               <span>{completedCount}/{totalTags} tags found</span>
             </div>
             {completedCount === 0 && totalTags > 0 && (
-              <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-                <span>🔍 Ready to start</span>
+              <div className="flex items-center justify-between text-sm mb-2" style={{color: '#6B7280'}}>
+                <span>Ready to start</span>
                 <span>Find the first NFC tag!</span>
               </div>
             )}
             {completedCount > 0 && lockedTags > 0 && (
-              <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-                <span>🔒 More tags</span>
+              <div className="flex items-center justify-between text-sm mb-2" style={{color: '#6B7280'}}>
+                <span>More tags</span>
                 <span>{lockedTags} more to discover</span>
               </div>
             )}
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${totalTags > 0 ? (completedCount / totalTags) * 100 : 0}%` }}
+            <div className="w-full rounded-full h-2" style={{backgroundColor: '#E5E7EB'}}>
+              <div
+                className="h-2 rounded-full transition-all duration-300"
+                style={{
+                  width: `${totalTags > 0 ? (completedCount / totalTags) * 100 : 0}%`,
+                  backgroundColor: '#2563EB'
+                }}
               ></div>
             </div>
           </div>
@@ -271,21 +296,21 @@ export default function PlayerDashboard() {
 
         {/* Next Tag to Find */}
         {nextTag && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold text-blue-900 mb-3">Next Tag to Find</h2>
+          <div className="rounded-xl p-6 mb-6" style={{backgroundColor: '#EFF6FF', border: '1px solid #DBEAFE'}}>
+            <h2 className="text-xl font-bold mb-3" style={{color: '#2563EB'}}>Next Tag to Find</h2>
             <div>
-              <p className="text-blue-800 font-medium text-lg">Tag #{nextTag.orderIndex}</p>
+              <p className="font-semibold text-lg" style={{color: '#1D4ED8'}}>{nextTag.tagId}</p>
               {nextTag.clue ? (
-                <div className="mt-3 p-3 bg-blue-100 rounded-lg border border-blue-300">
-                  <p className="text-blue-900 font-semibold text-sm mb-1">Clue:</p>
-                  <p className="text-blue-800 text-base">{nextTag.clue}</p>
+                <div className="mt-3 p-3 rounded-lg" style={{backgroundColor: '#DBEAFE', border: '1px solid #BFDBFE'}}>
+                  <p className="font-semibold text-sm mb-1" style={{color: '#1E40AF'}}>Clue:</p>
+                  <p className="text-base" style={{color: '#1D4ED8'}}>{nextTag.clue}</p>
                 </div>
               ) : (
-                <div className="mt-3 p-3 bg-yellow-100 rounded-lg border border-yellow-300">
-                  <p className="text-yellow-800 text-sm">No clue provided for this tag</p>
+                <div className="mt-3 p-3 rounded-lg" style={{backgroundColor: '#FEF3C7', border: '1px solid #FDE68A'}}>
+                  <p className="text-sm" style={{color: '#92400E'}}>No clue provided for this tag</p>
                 </div>
               )}
-              <p className="text-blue-600 text-sm mt-3">
+              <p className="text-sm mt-3" style={{color: '#2563EB'}}>
                 Find the physical NFC tag to claim this location!
               </p>
             </div>
@@ -293,19 +318,19 @@ export default function PlayerDashboard() {
         )}
 
         {/* All Tags */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">All Tags</h2>
-          
+        <div className="bg-white rounded-xl shadow-lg p-6" style={{boxShadow: '0 4px 12px rgba(0,0,0,0.08)'}}>
+          <h2 className="text-2xl font-bold mb-6" style={{color: '#2563EB'}}>All Tags</h2>
+
           {tags.length === 0 ? (
-            <p className="text-gray-600 text-center py-8">
+            <p className="text-center py-8" style={{color: '#6B7280'}}>
               No tags have been created yet. Check back later!
             </p>
           ) : tags.filter(tag => canAccessTag(tag)).length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-600 mb-4">
-                🔍 Start your scavenger hunt! Find and scan the first NFC tag to begin.
+              <p className="mb-4" style={{color: '#6B7280'}}>
+                Start your scavenger hunt! Find and scan the first NFC tag to begin.
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm" style={{color: '#6B7280'}}>
                 Tags will appear here as you complete them.
               </p>
             </div>
@@ -317,49 +342,44 @@ export default function PlayerDashboard() {
                 .map((tag) => {
                   const status = getTagStatus(tag.tagId);
                   const canAccess = canAccessTag(tag);
-                  
+
                   return (
                     <div
                       key={tag.tagId}
-                      className={`border rounded-lg p-4 ${
-                        status === 'completed'
-                          ? 'bg-green-50 border-green-200'
-                          : canAccess
-                          ? 'bg-white border-gray-200'
-                          : 'bg-gray-50 border-gray-200 opacity-60'
-                      }`}
+                      className="border rounded-xl p-4"
+                      style={{
+                        borderColor: status === 'completed' ? '#A7F3D0' : canAccess ? '#E5E7EB' : '#E5E7EB',
+                        backgroundColor: status === 'completed' ? '#D1FAE5' : canAccess ? '#FFFFFF' : '#F9FAFB',
+                        opacity: !canAccess && status !== 'completed' ? 0.6 : 1
+                      }}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                            status === 'completed'
-                              ? 'bg-green-500 text-white'
-                              : canAccess
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-gray-400 text-white'
-                          }`}>
-                            {tag.orderIndex}
+                          <div className="px-2 py-1 rounded-full flex items-center justify-center text-xs font-medium text-white" style={{
+                            backgroundColor: status === 'completed' ? '#059669' : canAccess ? '#2563EB' : '#6B7280'
+                          }}>
+                            {status === 'completed' ? '✓' : '•'}
                           </div>
                           <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900">Tag #{tag.orderIndex}</h3>
+                            <h3 className="font-semibold" style={{color: '#2563EB'}}>{tag.tagId}</h3>
                             {tag.clue ? (
-                              <div className="mt-2 p-2 bg-gray-50 rounded border">
-                                <p className="text-gray-700 text-sm font-medium">Clue: {tag.clue}</p>
+                              <div className="mt-2 p-2 rounded border" style={{backgroundColor: '#F9FAFB', borderColor: '#E5E7EB'}}>
+                                <p className="text-sm font-medium" style={{color: '#4F46E5'}}>Clue: {tag.clue}</p>
                               </div>
                             ) : (
-                              <p className="text-gray-500 text-sm mt-1 italic">No clue provided</p>
+                              <p className="text-sm mt-1 italic" style={{color: '#6B7280'}}>No clue provided</p>
                             )}
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
                           {status === 'completed' && (
-                            <span className="text-green-600 font-medium">✓ Found</span>
+                            <span className="font-semibold" style={{color: '#059669'}}>✓ Found</span>
                           )}
                           {!canAccess && status !== 'completed' && (
-                            <span className="text-gray-500 text-sm">Complete previous tag first</span>
+                            <span className="text-sm" style={{color: '#6B7280'}}>Complete previous tag first</span>
                           )}
                           {canAccess && status !== 'completed' && (
-                            <span className="text-blue-600 text-sm">Find the physical tag</span>
+                            <span className="text-sm" style={{color: '#2563EB'}}>Find the physical tag</span>
                           )}
                         </div>
                       </div>
@@ -371,20 +391,20 @@ export default function PlayerDashboard() {
         </div>
 
         {/* Map Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">🗺️ Tag Map</h2>
-          <PlayerMap 
-            tags={tags} 
-            progress={progress} 
-            playerId={playerData?.playerId} 
+        <div className="bg-white rounded-xl shadow-lg p-6 mt-6" style={{boxShadow: '0 4px 12px rgba(0,0,0,0.08)'}}>
+          <h2 className="text-xl font-bold mb-4" style={{color: '#2563EB'}}>Tag Map</h2>
+          <PlayerMap
+            tags={tags}
+            progress={progress}
+            playerId={playerData?.playerId}
           />
         </div>
 
         {/* Game Complete */}
         {completedCount === totalTags && totalTags > 0 && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mt-6 text-center">
-            <h2 className="text-2xl font-bold text-yellow-900 mb-2">🎉 Congratulations!</h2>
-            <p className="text-yellow-800">
+          <div className="rounded-xl p-6 mt-6 text-center" style={{backgroundColor: '#D1FAE5', border: '1px solid #A7F3D0'}}>
+            <h2 className="text-2xl font-bold mb-2" style={{color: '#059669'}}>🎉 Congratulations!</h2>
+            <p style={{color: '#047857'}}>
               You&apos;ve found all {totalTags} tags! You&apos;ve completed the scavenger hunt!
             </p>
           </div>

@@ -341,10 +341,10 @@ function AdminPageContent() {
     const orderIndex = prompt('Enter order index (optional, press Enter to skip):');
     
     // Auto-generate tag ID based on existing tags for current game
-    const existingTagIds = tags
-      .filter(tag => tag.gameId === currentGameId)
-      .map(tag => tag.tagId)
-      .filter(id => id.startsWith('TAG'));
+                const existingTagIds = tags
+                  .filter(tag => tag.gameId === currentGameId)
+                  .map(tag => tag.tagId)
+                  .filter(id => id.startsWith('TAG'));
     const nextTagNumber = existingTagIds.length > 0 
       ? Math.max(...existingTagIds.map(id => parseInt(id.replace('TAG', '')))) + 1
       : 1;
@@ -424,7 +424,7 @@ function AdminPageContent() {
 
   // Helper function to format timestamp
   const formatTimestamp = (timestamp) => {
-    if (!timestamp || timestamp === 0) return '';
+    if (!timestamp || timestamp === 0) return 'Not set';
     try {
       return new Date(Number(timestamp)).toLocaleString();
     } catch (error) {
@@ -434,6 +434,7 @@ function AdminPageContent() {
 
   // Get the current active game
   const currentGame = currentGameId ? games.find(game => game.gameId === currentGameId) : null;
+  
   
   // Generate leaderboard from progress data for current game
   const currentGameProgress = currentGameId ? progress.filter(entry => entry.gameId === currentGameId) : progress;
@@ -445,17 +446,16 @@ function AdminPageContent() {
     return player ? player.name : playerId; // Fallback to ID if name not found
   };
 
-  // Get current game stats
-  const currentGameTags = currentGameId ? tags.filter(tag => tag.gameId === currentGameId) : tags;
-  const activeTagsCount = currentGameTags.filter(tag => tag.isActive).length;
-  const totalClaims = currentGameProgress.length;
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div className="text-lg text-gray-600">Loading HopQuest...</div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+              <div className="text-lg text-gray-600">Loading data from SpacetimeDB...</div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -463,100 +463,80 @@ function AdminPageContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-red-50 flex items-center justify-center p-8">
-        <div className="bg-white border border-red-200 rounded-xl p-8 max-w-md">
-          <div className="flex items-center mb-4">
-            <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
-              <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-semibold text-red-800">Connection Error</h2>
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold text-red-800 mb-2">Connection Error</h2>
+            <p className="text-red-700">{error}</p>
+            <p className="text-red-600 text-sm mt-2">
+              Make sure your SpacetimeDB instance is running and accessible.
+            </p>
           </div>
-          <p className="text-red-700 mb-4">{error}</p>
-          <p className="text-red-600 text-sm">
-            Make sure your SpacetimeDB instance is running and accessible.
-          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col" style={{backgroundColor: '#F9FAFB'}}>
-      {/* Top Bar - Sticky Header */}
-      <div className="sticky top-0 z-50 bg-white border-b" style={{borderColor: '#E5E7EB', height: '72px'}}>
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between h-full">
-            {/* Logo & Title Group */}
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <img
-                  src="/logo.png"
-                  alt="HopQuest Logo"
-                  className="h-8 w-8 object-contain"
-                  onError={e => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
-                  }}
-                />
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{display: 'none', backgroundColor: '#2563EB'}}>
-                  HQ
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h1 className="text-xl font-bold" style={{color: '#2563EB'}}>HopQuest</h1>
-                    {currentGame && (
-                      <div className="px-2 py-1 rounded-full text-xs font-medium" style={{
-                        backgroundColor: currentGame.status === 'active' ? '#D1FAE5' : currentGame.status === 'setup' ? '#FEF3C7' : '#FEE2E2',
-                        color: currentGame.status === 'active' ? '#059669' : currentGame.status === 'setup' ? '#D97706' : '#DC2626'
-                      }}>
-                        {currentGame.status.toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs" style={{color: '#6B7280'}}>Mission Control</p>
-                </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+      <style jsx>{`
+        .scrollable-content::-webkit-scrollbar {
+          width: 6px;
+        }
+        .scrollable-content::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 3px;
+        }
+        .scrollable-content::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 3px;
+        }
+        .scrollable-content::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">🎯 Scavenger Hunt Admin</h1>
+          <p className="text-gray-600">Real-time game management dashboard</p>
+        </div>
+        
+        {/* Warning Banner for Existing Data */}
+        {games.length > 0 && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
               </div>
-
-              {/* Compact Stats */}
-              <div className="flex items-center space-x-6 ml-8">
-                <div className="flex items-center space-x-1">
-                  <span className="text-lg font-semibold" style={{color: '#2563EB'}}>{players.length}</span>
-                  <span className="text-xs" style={{color: '#6B7280'}}>Players</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <span className="text-lg font-semibold" style={{color: '#4F46E5'}}>{activeTagsCount}</span>
-                  <span className="text-xs" style={{color: '#6B7280'}}>Tags</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <span className="text-lg font-semibold" style={{color: '#059669'}}>{totalClaims}</span>
-                  <span className="text-xs" style={{color: '#6B7280'}}>Claims</span>
-                </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">
+                  <strong>Existing game data found.</strong> Creating a new game will permanently delete all current data (games, tags, progress, players).
+                </p>
               </div>
             </div>
+          </div>
+        )}
 
-            {/* Controls */}
-            <div className="flex items-center space-x-2">
+        {/* Game Status Card */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold text-gray-900">Game Status</h2>
+            <div className="flex space-x-2">
               <button
                 onClick={createGame}
-                className="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                style={{backgroundColor: '#FEE2E2', color: '#DC2626'}}
-                onMouseEnter={e => e.target.style.backgroundColor = '#FECACA'}
-                onMouseLeave={e => e.target.style.backgroundColor = '#FEE2E2'}
+                className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200 transition-colors font-medium"
                 title="This will delete all existing data and start fresh"
               >
-                New Game
+                🗑️ New Game (Wipe All)
               </button>
               {currentGame && (
                 <>
                   {currentGame.status === 'setup' && (
                     <button
                       onClick={startGame}
-                      className="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                      style={{backgroundColor: '#D1FAE5', color: '#059669'}}
-                      onMouseEnter={e => e.target.style.backgroundColor = '#A7F3D0'}
-                      onMouseLeave={e => e.target.style.backgroundColor = '#D1FAE5'}
+                      className="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200 transition-colors"
                     >
                       Start Game
                     </button>
@@ -564,10 +544,7 @@ function AdminPageContent() {
                   {currentGame.status === 'active' && (
                     <button
                       onClick={endGame}
-                      className="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                      style={{backgroundColor: '#FEE2E2', color: '#DC2626'}}
-                      onMouseEnter={e => e.target.style.backgroundColor = '#FECACA'}
-                      onMouseLeave={e => e.target.style.backgroundColor = '#FEE2E2'}
+                      className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200 transition-colors"
                     >
                       End Game
                     </button>
@@ -576,184 +553,216 @@ function AdminPageContent() {
               )}
             </div>
           </div>
+          {currentGame ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <span className="text-sm font-medium text-gray-500">Game Status</span>
+                <p className={`text-lg font-semibold mt-1 ${
+                  currentGame.status === 'active' ? 'text-green-600' : 
+                  currentGame.status === 'setup' ? 'text-yellow-600' : 'text-red-600'
+                }`}>
+                  {currentGame.status.toUpperCase()}
+                </p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <span className="text-sm font-medium text-gray-500">Started</span>
+                <p className="text-lg font-semibold text-gray-900 mt-1">
+                  {formatTimestamp(currentGame.startedAt)}
+                </p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <span className="text-sm font-medium text-gray-500">Players</span>
+                <p className="text-lg font-semibold text-gray-900 mt-1">{players.length}</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-8">No active game found</p>
+          )}
         </div>
-      </div>
 
-      {/* Main Body - Split Card Layout */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-6 p-6" style={{height: 'calc(100vh - 72px - 40px)'}}>
-        {/* Left Side - Hero Map Card */}
-        <div className="w-full lg:w-[68%] h-full">
-          <div className="h-full bg-white rounded-2xl shadow-lg border-4 p-4" style={{borderColor: '#E0E7FF', boxShadow: '0 4px 12px rgba(0,0,0,0.08)'}}>
-            <div className="w-full h-full rounded-xl overflow-hidden" style={{borderRadius: '14px'}}>
-              <AdminMap tags={currentGameTags} />
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side - Single Stats Card with Grid Layout */}
-        <div className="w-full lg:w-[32%] h-full" style={{minHeight: 0}}>
-          <div className="h-full bg-white rounded-2xl shadow-lg overflow-hidden grid gap-0" style={{boxShadow: '0 4px 12px rgba(0,0,0,0.08)', gridTemplateRows: 'auto auto minmax(120px, auto) 1fr', minHeight: 0}}>
-
-            {/* Leaderboard Section */}
-            <div className="p-4">
-              <h3 className="text-sm font-bold" style={{color: '#4F46E5'}}>
-                LEADERBOARD ({leaderboard.length})
-              </h3>
-              <div className="mt-3">
-                {leaderboard && leaderboard.length > 0 ? (
-                  <div className="space-y-2">
-                    {leaderboard.slice(0, 4).map((entry, index) => (
-                      <div key={entry.playerId} className="flex items-center justify-between p-2 rounded" style={{backgroundColor: '#F9FAFB'}}>
-                        <div className="flex items-center space-x-2">
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs ${
-                            index === 0 ? 'bg-yellow-500' :
-                            index === 1 ? 'bg-gray-400' :
-                            index === 2 ? 'bg-orange-500' : ''
-                          }`} style={{backgroundColor: index > 2 ? '#2563EB' : undefined}}>
-                            {index + 1}
-                          </div>
-                          <h4 className="font-medium text-gray-900 text-sm">{getPlayerName(entry.playerId)}</h4>
-                        </div>
-                        <p className="text-sm font-bold" style={{color: '#2563EB'}}>{entry.count}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-3" style={{color: '#6B7280'}}>
-                    <p className="text-xs">No claims yet</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Recent Activity Section */}
-            <div className="p-4 border-t" style={{borderColor: '#E5E7EB'}}>
-              <h3 className="text-sm font-bold" style={{color: '#4F46E5'}}>RECENT ACTIVITY</h3>
-              <div className="mt-3">
-                {progress && progress.length > 0 ? (
-                  <div className="space-y-2">
-                    {progress
-                      .filter(entry => currentGameId ? entry.gameId === currentGameId : true)
-                      .slice(0, 3)
-                      .map((entry, index) => (
-                        <div key={`${entry.gameId}-${entry.playerId}-${entry.tagId}-${index}`} className="flex items-center space-x-2 p-2 rounded" style={{backgroundColor: '#F9FAFB'}}>
-                          <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{backgroundColor: '#059669'}}>
-                            <span className="text-white text-xs">✓</span>
-                          </div>
-                          <p className="text-xs font-medium text-gray-900 truncate">
-                            {getPlayerName(entry.playerId)} → {entry.tagId}
-                          </p>
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-3" style={{color: '#6B7280'}}>
-                    <p className="text-xs">No activity yet</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Players Section */}
-            <div className="p-4 flex flex-col border-t" style={{borderColor: '#E5E7EB', minHeight: 0}}>
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold" style={{color: '#4F46E5'}}>PLAYERS ({players.length})</h3>
-                <button
-                  onClick={upsertPlayer}
-                  className="px-2 py-1 text-xs rounded font-medium transition-colors"
-                  style={{backgroundColor: '#2563EB', color: 'white'}}
-                  onMouseEnter={e => e.target.style.backgroundColor = '#1D4ED8'}
-                  onMouseLeave={e => e.target.style.backgroundColor = '#2563EB'}
-                >
-                  + Add
-                </button>
-              </div>
-              <div className="overflow-y-auto flex-1 mt-3" style={{minHeight: 0}}>
-                {players && players.length > 0 ? (
-                  <div className="space-y-1">
-                    {players.map((player, index) => (
-                      <div key={`${player.playerId}-${index}`} className="p-2 rounded" style={{backgroundColor: '#F9FAFB'}}>
-                        <h4 className="font-medium text-gray-900 text-xs truncate" style={{textOverflow: 'ellipsis', overflow: 'hidden'}}>
-                          {player.name} ({player.playerId})
-                        </h4>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-3" style={{color: '#6B7280'}}>
-                    <p className="text-xs">No players registered</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Tags Management Section - Takes remaining space */}
-            <div className="p-4 flex flex-col border-t" style={{borderColor: '#E5E7EB', minHeight: 0}}>
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold" style={{color: '#4F46E5'}}>TAGS ({currentGameTags.length})</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Tags Section */}
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 flex flex-col h-96">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-semibold text-gray-900">🏷️ NFC Tags</h2>
+              <div className="flex space-x-2">
                 <button
                   onClick={createTag}
-                  className="px-2 py-1 text-xs rounded font-medium transition-colors"
-                  style={{backgroundColor: '#059669', color: 'white'}}
-                  onMouseEnter={e => e.target.style.backgroundColor = '#047857'}
-                  onMouseLeave={e => e.target.style.backgroundColor = '#059669'}
+                  className="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200 transition-colors"
                 >
-                  + Add
+                  + Add Tag
                 </button>
               </div>
-              <div className="overflow-y-auto flex-1 mt-3" style={{minHeight: 0}}>
-                {currentGameTags && currentGameTags.length > 0 ? (
-                  <div className="space-y-2">
-                    {currentGameTags.map((tag, index) => (
-                      <div key={`${tag.tagId}-${index}`} className="p-3 border rounded" style={{borderColor: '#E5E7EB', backgroundColor: '#F9FAFB'}}>
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-gray-900 text-sm">{tag.tagId}</h4>
-                          <div className="flex items-center space-x-1">
-                            <span className="px-2 py-1 rounded text-xs font-medium" style={{
-                              backgroundColor: tag.isActive ? '#D1FAE5' : '#F3F4F6',
-                              color: tag.isActive ? '#059669' : '#6B7280'
-                            }}>
-                              {tag.isActive ? 'Active' : 'Inactive'}
-                            </span>
-                            <button
-                              onClick={() => deleteTag(tag.tagId)}
-                              disabled={actionLoading[`delete_tag_${tag.tagId}`]}
-                              className="px-2 py-1 text-xs rounded transition-colors disabled:opacity-50"
-                              style={{backgroundColor: '#FEE2E2', color: '#DC2626'}}
-                              onMouseEnter={e => !e.target.disabled && (e.target.style.backgroundColor = '#FECACA')}
-                              onMouseLeave={e => !e.target.disabled && (e.target.style.backgroundColor = '#FEE2E2')}
-                            >
-                              Del
-                            </button>
-                          </div>
-                        </div>
-                        <div className="text-xs" style={{color: '#6B7280'}}>
-                          <p>Order: {tag.orderIndex}</p>
-                          <p className="truncate">Clue: {formatClue(tag.clue) || 'No clue'}</p>
-                        </div>
+            </div>
+            <div className="space-y-4 overflow-y-auto flex-1 pr-2 scrollable-content">
+              {tags && tags.length > 0 ? (
+                tags.filter(tag => currentGameId ? tag.gameId === currentGameId : true).map((tag, index) => (
+                  <div key={`${tag.tagId}-${index}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <h3 className="font-semibold text-gray-900 text-lg">{tag.tagId}</h3>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          tag.isActive 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {tag.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                        {tag.lat && tag.lon && (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                            📍 
+                          </span>
+                        )}
                       </div>
-                    ))}
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => deleteTag(tag.tagId)}
+                          disabled={actionLoading[`delete_tag_${tag.tagId}`]}
+                          className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200 transition-colors disabled:opacity-50"
+                        >
+                          {actionLoading[`delete_tag_${tag.tagId}`] ? '...' : '🗑️'}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-500">Order:</span>
+                        <span className="ml-2 font-medium">{tag.orderIndex}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Status:</span>
+                        <span className="ml-2 font-medium">{tag.isActive ? 'Active' : 'Inactive'}</span>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <span className="text-gray-500 text-sm">Clue:</span>
+                      <p className="text-gray-700 mt-1 font-medium">{formatClue(tag.clue)}</p>
+                    </div>
                   </div>
-                ) : (
-                  <div className="text-center py-3" style={{color: '#6B7280'}}>
-                    <p className="text-xs">No tags found</p>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No tags found</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Progress Section */}
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 flex flex-col h-96">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-6">📊 Recent Progress</h2>
+            <div className="space-y-4 overflow-y-auto flex-1 pr-2 scrollable-content">
+              {progress && progress.length > 0 ? (
+                progress.filter(entry => currentGameId ? entry.gameId === currentGameId : true).slice(0, 8).map((entry, index) => (
+                  <div key={`${entry.gameId}-${entry.playerId}-${entry.tagId}-${index}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-gray-900">{getPlayerName(entry.playerId)}</h3>
+                      <span className="text-sm text-gray-500">
+                        {formatTimestamp(entry.ts)}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-500">Tag:</span>
+                        <span className="ml-2 font-medium text-green-600">{entry.tagId}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Order:</span>
+                        <span className="ml-2 font-medium">{entry.orderIndex}</span>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No progress entries found</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Footer - Light Status Bar */}
-      <div className="border-t px-6 py-2" style={{backgroundColor: '#F9FAFB', borderColor: '#E5E7EB', height: '40px'}}>
-        <div className="flex items-center justify-between text-xs h-full">
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 rounded-full animate-pulse" style={{backgroundColor: '#059669'}}></div>
-            <span style={{color: '#6B7280'}}>Connected to SpacetimeDB · Last sync: {new Date().toLocaleTimeString()}</span>
+        {/* Leaderboard Section */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mt-8 border border-gray-200 flex flex-col h-80">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-6">🏆 Leaderboard</h2>
+          <div className="space-y-4 overflow-y-auto flex-1 pr-2">
+            {leaderboard && leaderboard.length > 0 ? (
+              leaderboard.map((entry, index) => (
+                <div key={entry.playerId} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
+                      index === 0 ? 'bg-yellow-500' : 
+                      index === 1 ? 'bg-gray-400' : 
+                      index === 2 ? 'bg-orange-500' : 'bg-blue-500'
+                    }`}>
+                      {index + 1}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{getPlayerName(entry.playerId)}</h3>
+                      <p className="text-sm text-gray-500">Player</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-gray-900">{entry.count}</p>
+                      <p className="text-sm text-gray-500">tags claimed</p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No claims yet - start the game to see the leaderboard!</p>
+              </div>
+            )}
           </div>
-          <div style={{color: '#6B7280'}}>
-            Game ID: {currentGameId || 'None'}
+        </div>
+
+        {/* Map Section */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mt-8 border border-gray-200">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-6">🗺️ Tag Locations</h2>
+          <AdminMap tags={tags.filter(tag => currentGameId ? tag.gameId === currentGameId : true)} />
+        </div>
+
+        {/* Players Section */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mt-8 border border-gray-200 flex flex-col h-60">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900">👥 Registered Players</h2>
+            <button
+              onClick={upsertPlayer}
+              className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200 transition-colors"
+            >
+              Add/Update Player
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto flex-1 pr-2 scrollable-content">
+            {players && players.length > 0 ? (
+              players.map((player, index) => (
+                <div key={`${player.playerId}-${index}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="mb-3">
+                    <h3 className="font-semibold text-gray-900 text-lg">{player.name}</h3>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="text-gray-500">ID:</span>
+                      <span className="ml-2 font-medium">{player.playerId}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-8 text-gray-500">
+                <p>No players registered</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Connection Status */}
+        <div className="mt-8 text-center">
+          <div className="inline-flex items-center px-6 py-3 bg-green-100 text-green-800 rounded-xl shadow-sm">
+            <div className="w-3 h-3 bg-green-500 rounded-full mr-3 animate-pulse"></div>
+            <span className="font-medium">Connected to SpacetimeDB</span>
           </div>
         </div>
       </div>

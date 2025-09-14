@@ -109,13 +109,27 @@ export default function JoinPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8" style={{backgroundColor: '#F9FAFB'}}>
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Join Scavenger Hunt
+          <div className="flex items-center justify-center mb-6">
+            <img
+              src="/logo.png"
+              alt="HopQuest Logo"
+              className="h-12 w-12 object-contain"
+              onError={e => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg ml-0" style={{display: 'none', backgroundColor: '#2563EB'}}>
+              HQ
+            </div>
+          </div>
+          <h2 className="mt-6 text-center text-3xl font-bold" style={{color: '#2563EB'}}>
+            Join HopQuest
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm" style={{color: '#6B7280'}}>
             Choose your role to get started
           </p>
         </div>
@@ -123,36 +137,58 @@ export default function JoinPage() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {/* Role Selection */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Select Your Role</h3>
-            
+            <h3 className="text-lg font-bold" style={{color: '#2563EB'}}>Select Your Role</h3>
+
             <div className="space-y-3">
-              <label className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+              <label className="flex items-center p-4 border rounded-xl cursor-pointer transition-colors" style={{
+                borderColor: selectedRole === 'organizer' ? '#2563EB' : '#E5E7EB',
+                backgroundColor: selectedRole === 'organizer' ? '#EFF6FF' : '#FFFFFF'
+              }} onMouseEnter={e => {
+                if (selectedRole !== 'organizer') {
+                  e.target.style.backgroundColor = '#F9FAFB';
+                }
+              }} onMouseLeave={e => {
+                if (selectedRole !== 'organizer') {
+                  e.target.style.backgroundColor = '#FFFFFF';
+                }
+              }}>
                 <input
                   type="radio"
                   name="role"
                   value="organizer"
                   checked={selectedRole === 'organizer'}
                   onChange={(e) => handleRoleSelect(e.target.value)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  className="h-4 w-4 border-2" style={{accentColor: '#2563EB', borderColor: '#E5E7EB'}}
                 />
                 <div className="ml-3">
-                  <div className="text-sm font-medium text-gray-900">Organizer</div>
-                  <div className="text-sm text-gray-500">Manage the game and activate tags</div>
+                  <div className="text-sm font-semibold" style={{color: '#2563EB'}}>Organizer</div>
+                  <div className="text-sm" style={{color: '#6B7280'}}>Manage the game and activate tags</div>
                 </div>
               </label>
 
-              <label className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+              <label className="flex items-center p-4 border rounded-xl cursor-pointer transition-colors" style={{
+                borderColor: selectedRole === 'player' ? '#2563EB' : '#E5E7EB',
+                backgroundColor: selectedRole === 'player' ? '#EFF6FF' : '#FFFFFF'
+              }} onMouseEnter={e => {
+                if (selectedRole !== 'player') {
+                  e.target.style.backgroundColor = '#F9FAFB';
+                }
+              }} onMouseLeave={e => {
+                if (selectedRole !== 'player') {
+                  e.target.style.backgroundColor = '#FFFFFF';
+                }
+              }}>
                 <input
                   type="radio"
                   name="role"
                   value="player"
                   checked={selectedRole === 'player'}
                   onChange={(e) => handleRoleSelect(e.target.value)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  className="h-4 w-4 border-2" style={{accentColor: '#2563EB', borderColor: '#E5E7EB'}}
                 />
                 <div className="ml-3">
-                  <div className="text-sm font-medium text-gray-900">Player</div>
-                  <div className="text-sm text-gray-500">Find and claim NFC tags</div>
+                  <div className="text-sm font-semibold" style={{color: '#2563EB'}}>Player</div>
+                  <div className="text-sm" style={{color: '#6B7280'}}>Find and claim NFC tags</div>
                 </div>
               </label>
             </div>
@@ -160,11 +196,11 @@ export default function JoinPage() {
 
           {/* Organizer Password */}
           {selectedRole === 'organizer' && (
-            <div className="space-y-4 pt-4 border-t border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Organizer Access</h3>
-              
+            <div className="space-y-4 pt-4" style={{borderTop: '1px solid #E5E7EB'}}>
+              <h3 className="text-lg font-bold" style={{color: '#2563EB'}}>Organizer Access</h3>
+
               <div>
-                <label htmlFor="organizerPassword" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="organizerPassword" className="block text-sm font-semibold" style={{color: '#4F46E5'}}>
                   Password *
                 </label>
                 <input
@@ -173,10 +209,23 @@ export default function JoinPage() {
                   required
                   value={organizerPassword}
                   onChange={(e) => setOrganizerPassword(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full px-3 py-2 border rounded-lg shadow-sm transition-colors"
+                  style={{
+                    borderColor: '#E5E7EB',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                  }}
+                  onFocus={e => {
+                    e.target.style.borderColor = '#2563EB';
+                    e.target.style.outline = 'none';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)';
+                  }}
+                  onBlur={e => {
+                    e.target.style.borderColor = '#E5E7EB';
+                    e.target.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+                  }}
                   placeholder="Enter organizer password"
                 />
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm" style={{color: '#6B7280'}}>
                   Contact the game administrator for the password
                 </p>
               </div>
@@ -185,11 +234,11 @@ export default function JoinPage() {
 
           {/* Player Details */}
           {selectedRole === 'player' && (
-            <div className="space-y-4 pt-4 border-t border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Player Information</h3>
-              
+            <div className="space-y-4 pt-4" style={{borderTop: '1px solid #E5E7EB'}}>
+              <h3 className="text-lg font-bold" style={{color: '#2563EB'}}>Player Information</h3>
+
               <div>
-                <label htmlFor="playerName" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="playerName" className="block text-sm font-semibold" style={{color: '#4F46E5'}}>
                   Name *
                 </label>
                 <input
@@ -198,7 +247,20 @@ export default function JoinPage() {
                   required
                   value={playerName}
                   onChange={(e) => setPlayerName(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full px-3 py-2 border rounded-lg shadow-sm transition-colors"
+                  style={{
+                    borderColor: '#E5E7EB',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                  }}
+                  onFocus={e => {
+                    e.target.style.borderColor = '#2563EB';
+                    e.target.style.outline = 'none';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)';
+                  }}
+                  onBlur={e => {
+                    e.target.style.borderColor = '#E5E7EB';
+                    e.target.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+                  }}
                   placeholder="Enter your name"
                 />
               </div>
@@ -211,7 +273,10 @@ export default function JoinPage() {
             <button
               type="submit"
               disabled={!selectedRole || loading || (selectedRole === 'organizer' && !organizerPassword) || (selectedRole === 'player' && !playerName.trim())}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative w-full flex justify-center py-3 px-4 text-sm font-semibold rounded-lg text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{backgroundColor: '#2563EB'}}
+              onMouseEnter={e => !e.target.disabled && (e.target.style.backgroundColor = '#1D4ED8')}
+              onMouseLeave={e => !e.target.disabled && (e.target.style.backgroundColor = '#2563EB')}
             >
               {loading ? 'Joining...' : 'Join Game'}
             </button>
@@ -220,9 +285,11 @@ export default function JoinPage() {
 
         {/* Info */}
         <div className="text-center">
-          <p className="text-xs text-gray-500">
-            Organizer password: ABC123
-          </p>
+          <div className="p-3 rounded-lg" style={{backgroundColor: '#EFF6FF', border: '1px solid #DBEAFE'}}>
+            <p className="text-xs font-medium" style={{color: '#2563EB'}}>
+              Organizer password: ABC123
+            </p>
+          </div>
         </div>
       </div>
     </div>

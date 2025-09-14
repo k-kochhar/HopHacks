@@ -36,12 +36,12 @@ export default function AdminMap({ tags }) {
   }
 
   return (
-    <div className="h-96 rounded border">
+    <div className="h-full w-full overflow-hidden" style={{borderRadius: '14px'}}>
       <MapErrorBoundary>
         <MapContainer
           center={[DEFAULT_LAT, DEFAULT_LON]}
           zoom={15}
-          style={{ height: '100%', width: '100%' }}
+          style={{ height: '100%', width: '100%', borderRadius: '14px' }}
         >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -81,7 +81,7 @@ export default function AdminMap({ tags }) {
                   color: 'blue',
                   fillColor: 'blue',
                   fillOpacity: 0.1,
-                  weight: 1
+                  weight: 0.5
                 }}
               />
             )}

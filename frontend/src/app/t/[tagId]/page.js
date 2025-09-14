@@ -364,21 +364,36 @@ export default function TagPage() {
       setMessage('No game selected');
       return;
     }
-    
+
     setActionLoading(true);
-    setMessage('');
+    setMessage('Getting location...');
     setGeoError('');
 
+    // Check if geolocation is available
+    if (!navigator.geolocation) {
+      setGeoError('Geolocation is not supported by this browser. Please use the map to pick a location.');
+      setShowGeoModal(true);
+      setActionLoading(false);
+      return;
+    }
+
     try {
+      console.log('Requesting geolocation...');
       // Request geolocation
       const position = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(
-          resolve,
-          reject,
+          (pos) => {
+            console.log('Geolocation success:', pos);
+            resolve(pos);
+          },
+          (err) => {
+            console.error('Geolocation failed:', err);
+            reject(err);
+          },
           {
             enableHighAccuracy: true,
-            timeout: 8000,
-            maximumAge: 0
+            timeout: 10000,
+            maximumAge: 30000
           }
         );
       });
@@ -419,17 +434,20 @@ export default function TagPage() {
       }, 1500);
     } catch (error) {
       console.error('Geolocation error:', error);
-      
+
+      let errorMessage = '';
       if (error.code === 1) { // PERMISSION_DENIED
-        setGeoError('Location permission denied. Please allow location access or use the map to pick a location.');
-        setShowGeoModal(true);
+        errorMessage = 'Location permission denied. Please allow location access in your browser settings, or use the map to pick a location.';
+      } else if (error.code === 2) { // POSITION_UNAVAILABLE
+        errorMessage = 'Location information is unavailable. Please use the map to pick a location.';
       } else if (error.code === 3) { // TIMEOUT
-        setGeoError('Location request timed out. Please use the map to pick a location.');
-        setShowGeoModal(true);
+        errorMessage = 'Location request timed out. Please use the map to pick a location.';
       } else {
-        setMessage(`Failed to get location: ${error.message}`);
-        setTimeout(() => setMessage(''), 3000);
+        errorMessage = `Failed to get location: ${error.message || 'Unknown error'}. Please use the map to pick a location.`;
       }
+
+      setGeoError(errorMessage);
+      setShowGeoModal(true);
     } finally {
       setActionLoading(false);
     }
@@ -537,10 +555,10 @@ export default function TagPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#F9FAFB'}}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading tag...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto" style={{borderColor: '#2563EB'}}></div>
+          <p className="mt-2" style={{color: '#6B7280'}}>Loading tag...</p>
         </div>
       </div>
     );
@@ -548,13 +566,16 @@ export default function TagPage() {
 
   if (!role) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#F9FAFB'}}>
         <div className="text-center max-w-md mx-auto p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Please Join First</h3>
-          <p className="text-gray-600 mb-4">You need to join the game before interacting with tags.</p>
+          <h3 className="text-lg font-semibold mb-2" style={{color: '#2563EB'}}>Please Join First</h3>
+          <p className="mb-4" style={{color: '#6B7280'}}>You need to join the game before interacting with tags.</p>
           <button
             onClick={() => router.push('/join')}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            className="inline-flex items-center px-4 py-2 border-0 text-sm font-medium rounded-lg text-white transition-colors"
+            style={{backgroundColor: '#2563EB'}}
+            onMouseEnter={e => e.target.style.backgroundColor = '#1D4ED8'}
+            onMouseLeave={e => e.target.style.backgroundColor = '#2563EB'}
           >
             Join Game
           </button>
@@ -566,18 +587,21 @@ export default function TagPage() {
   // Check if tag exists
   if (!loading && !tagExists) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#F9FAFB'}}>
         <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-red-400 mb-4">
+          <div className="mb-4" style={{color: '#DC2626'}}>
             <svg className="w-12 h-12 mx-auto" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Tag Not Found</h3>
-          <p className="text-gray-600 mb-4">The tag &quot;{tagId}&quot; doesn&apos;t exist in the current game.</p>
+          <h3 className="text-lg font-semibold mb-2" style={{color: '#2563EB'}}>Tag Not Found</h3>
+          <p className="mb-4" style={{color: '#6B7280'}}>The tag &quot;{tagId}&quot; doesn&apos;t exist in the current game.</p>
           <button
             onClick={() => router.push('/join')}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            className="inline-flex items-center px-4 py-2 border-0 text-sm font-medium rounded-lg text-white transition-colors"
+            style={{backgroundColor: '#2563EB'}}
+            onMouseEnter={e => e.target.style.backgroundColor = '#1D4ED8'}
+            onMouseLeave={e => e.target.style.backgroundColor = '#2563EB'}
           >
             Back to Join
           </button>
@@ -587,30 +611,36 @@ export default function TagPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{backgroundColor: '#F9FAFB'}}>
       {/* Header */}
-      <div className="bg-white shadow">
+      <div className="bg-white shadow-sm" style={{borderBottom: '1px solid #E5E7EB'}}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-4">
               {role === 'player' && (
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="text-sm text-blue-600 hover:text-blue-500 flex items-center"
+                  className="text-sm flex items-center transition-colors"
+                  style={{color: '#2563EB'}}
+                  onMouseEnter={e => e.target.style.color = '#1D4ED8'}
+                  onMouseLeave={e => e.target.style.color = '#2563EB'}
                 >
                   ← Back to Dashboard
                 </button>
               )}
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Tag: {tagId}</h1>
-                <p className="text-sm text-gray-500">
+                <h1 className="text-2xl font-bold" style={{color: '#2563EB'}}>Tag: {tagId}</h1>
+                <p className="text-sm" style={{color: '#6B7280'}}>
                   {role === 'organizer' ? 'Organizer View' : `Player: ${playerData?.name}`}
                 </p>
               </div>
             </div>
             <button
               onClick={() => router.push('/join')}
-              className="text-sm text-blue-600 hover:text-blue-500"
+              className="text-sm transition-colors"
+              style={{color: '#2563EB'}}
+              onMouseEnter={e => e.target.style.color = '#1D4ED8'}
+              onMouseLeave={e => e.target.style.color = '#2563EB'}
             >
               Change Role
             </button>
@@ -622,30 +652,30 @@ export default function TagPage() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Status Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="text-sm font-medium text-gray-500">Game Status</div>
-            <div className={`text-lg font-semibold ${
-              gameStatus === 'active' ? 'text-green-600' : 
-              gameStatus === 'ended' ? 'text-red-600' : 'text-yellow-600'
-            }`}>
+          <div className="bg-white rounded-xl shadow-lg p-4" style={{boxShadow: '0 4px 12px rgba(0,0,0,0.08)'}}>
+            <div className="text-sm font-semibold" style={{color: '#6B7280'}}>Game Status</div>
+            <div className="text-lg font-bold" style={{
+              color: gameStatus === 'active' ? '#059669' :
+                     gameStatus === 'ended' ? '#DC2626' : '#D97706'
+            }}>
               {gameStatus.toUpperCase()}
             </div>
           </div>
-          
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="text-sm font-medium text-gray-500">Tag Status</div>
-            <div className={`text-lg font-semibold ${
-              tagActive ? 'text-green-600' : 'text-gray-400'
-            }`}>
+
+          <div className="bg-white rounded-xl shadow-lg p-4" style={{boxShadow: '0 4px 12px rgba(0,0,0,0.08)'}}>
+            <div className="text-sm font-semibold" style={{color: '#6B7280'}}>Tag Status</div>
+            <div className="text-lg font-bold" style={{
+              color: tagActive ? '#059669' : '#6B7280'
+            }}>
               {tagActive ? 'ACTIVE' : 'INACTIVE'}
             </div>
           </div>
-          
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="text-sm font-medium text-gray-500">Claimed</div>
-            <div className={`text-lg font-semibold ${
-              tagClaimed ? 'text-green-600' : 'text-gray-400'
-            }`}>
+
+          <div className="bg-white rounded-xl shadow-lg p-4" style={{boxShadow: '0 4px 12px rgba(0,0,0,0.08)'}}>
+            <div className="text-sm font-semibold" style={{color: '#6B7280'}}>Claimed</div>
+            <div className="text-lg font-bold" style={{
+              color: tagClaimed ? '#059669' : '#6B7280'
+            }}>
               {tagClaimed ? 'YES' : 'NO'}
             </div>
           </div>
@@ -653,25 +683,28 @@ export default function TagPage() {
 
         {/* Message */}
         {message && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
-            <p className="text-green-800">{message}</p>
+          <div className="mb-6 p-4 rounded-lg" style={{backgroundColor: '#D1FAE5', border: '1px solid #A7F3D0'}}>
+            <p style={{color: '#059669'}}>{message}</p>
           </div>
         )}
 
         {/* Organizer View */}
         {role === 'organizer' && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Organizer Actions</h2>
+          <div className="bg-white rounded-xl shadow-lg p-6" style={{boxShadow: '0 4px 12px rgba(0,0,0,0.08)'}}>
+            <h2 className="text-lg font-bold mb-4" style={{color: '#2563EB'}}>Organizer Actions</h2>
             
             {!tagActive ? (
               <div className="space-y-4">
-                <p className="text-gray-600">This tag is not active yet. You can activate it for the current game.</p>
+                <p style={{color: '#6B7280'}}>This tag is not active yet. You can activate it for the current game.</p>
                 
                 {/* Primary button for geolocation activation */}
                 <button
                   onClick={handleActivateTagWithLocation}
                   disabled={actionLoading}
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{backgroundColor: '#2563EB'}}
+                  onMouseEnter={e => !e.target.disabled && (e.target.style.backgroundColor = '#1D4ED8')}
+                  onMouseLeave={e => !e.target.disabled && (e.target.style.backgroundColor = '#2563EB')}
                 >
                   {actionLoading ? 'Activating...' : 'Activate & Save Location'}
                 </button>
@@ -680,42 +713,45 @@ export default function TagPage() {
                 <button
                   onClick={handleActivateTag}
                   disabled={actionLoading}
-                  className="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{backgroundColor: '#6B7280'}}
+                  onMouseEnter={e => !e.target.disabled && (e.target.style.backgroundColor = '#4B5563')}
+                  onMouseLeave={e => !e.target.disabled && (e.target.style.backgroundColor = '#6B7280')}
                 >
                   {actionLoading ? 'Activating...' : 'Activate (no location)'}
                 </button>
                 
-                <p className="text-xs text-gray-500">
+                <p className="text-xs" style={{color: '#6B7280'}}>
                   We&apos;ll ask for location permission (required once on iPhone).
                 </p>
                 
                 {geoError && (
-                  <div className="text-sm text-red-600 bg-red-50 p-3 rounded">
+                  <div className="text-sm p-3 rounded" style={{color: '#DC2626', backgroundColor: '#FEE2E2'}}>
                     {geoError}
                   </div>
                 )}
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center text-green-600">
+                <div className="flex items-center" style={{color: '#059669'}}>
                   <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  <span className="font-medium">Tag is active and ready for players!</span>
+                  <span className="font-semibold">Tag is active and ready for players!</span>
                 </div>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm" style={{color: '#6B7280'}}>
                   Players can now find and claim this tag during the active game.
                 </p>
                 
                 {/* Show location info if available */}
                 {currentTag && currentTag.lat && currentTag.lon && (
-                  <div className="mt-4 p-3 bg-blue-50 rounded border">
-                    <div className="text-sm font-medium text-blue-900 mb-1">Location:</div>
-                    <div className="text-sm text-blue-700 font-mono">
+                  <div className="mt-4 p-3 rounded" style={{backgroundColor: '#EFF6FF', border: '1px solid #DBEAFE'}}>
+                    <div className="text-sm font-semibold mb-1" style={{color: '#2563EB'}}>Location:</div>
+                    <div className="text-sm font-mono" style={{color: '#1D4ED8'}}>
                       {formatCoord(currentTag.lat, currentTag.lon)}
                     </div>
                     {currentTag.accuracyM && (
-                      <div className="text-xs text-blue-600 mt-1">
+                      <div className="text-xs mt-1" style={{color: '#2563EB'}}>
                         ±{currentTag.accuracyM}m accuracy
                       </div>
                     )}
@@ -728,54 +764,54 @@ export default function TagPage() {
 
         {/* Player View */}
         {role === 'player' && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Player Actions</h2>
+          <div className="bg-white rounded-xl shadow-lg p-6" style={{boxShadow: '0 4px 12px rgba(0,0,0,0.08)'}}>
+            <h2 className="text-lg font-bold mb-4" style={{color: '#2563EB'}}>Player Actions</h2>
             
             {gameStatus !== 'active' ? (
               <div className="text-center py-8">
-                <div className="text-yellow-600 mb-2">
+                <div className="mb-2" style={{color: '#D97706'}}>
                   <svg className="w-12 h-12 mx-auto" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Game Not Started</h3>
-                <p className="text-gray-600">The scavenger hunt hasn&apos;t started yet. Please wait for the organizer to begin the game.</p>
+                <h3 className="text-lg font-semibold mb-2" style={{color: '#2563EB'}}>Game Not Started</h3>
+                <p style={{color: '#6B7280'}}>The scavenger hunt hasn&apos;t started yet. Please wait for the organizer to begin the game.</p>
               </div>
             ) : !tagActive ? (
               <div className="text-center py-8">
-                <div className="text-gray-400 mb-2">
+                <div className="mb-2" style={{color: '#6B7280'}}>
                   <svg className="w-12 h-12 mx-auto" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Tag Not Active</h3>
-                <p className="text-gray-600">This tag hasn&apos;t been activated yet by the organizer.</p>
+                <h3 className="text-lg font-semibold mb-2" style={{color: '#2563EB'}}>Tag Not Active</h3>
+                <p style={{color: '#6B7280'}}>This tag hasn&apos;t been activated yet by the organizer.</p>
               </div>
             ) : tagClaimed ? (
               <div className="text-center py-8">
-                <div className="text-green-600 mb-2">
+                <div className="mb-2" style={{color: '#059669'}}>
                   <svg className="w-12 h-12 mx-auto" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Already Claimed!</h3>
-                <p className="text-gray-600">You have claimed {playerClaimCount}/{totalActiveTags} tags so far.</p>
+                <h3 className="text-lg font-semibold mb-2" style={{color: '#2563EB'}}>Already Claimed!</h3>
+                <p style={{color: '#6B7280'}}>You have claimed {playerClaimCount}/{totalActiveTags} tags so far.</p>
               </div>
             ) : (
               <div className="space-y-4">
                 <div className="text-center">
-                  <div className="text-green-600 mb-2">
+                  <div className="mb-2" style={{color: '#059669'}}>
                     <svg className="w-12 h-12 mx-auto" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Tag Found!</h3>
-                  <p className="text-gray-600 mb-4">This tag is active and ready to be claimed.</p>
+                  <h3 className="text-lg font-semibold mb-2" style={{color: '#2563EB'}}>Tag Found!</h3>
+                  <p className="mb-4" style={{color: '#6B7280'}}>This tag is active and ready to be claimed.</p>
                 </div>
                 
                 {!playerCanClaimTag && (
-                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <p className="text-yellow-800 text-sm">
+                  <div className="mb-4 p-3 rounded" style={{backgroundColor: '#FEF3C7', border: '1px solid #FDE68A'}}>
+                    <p className="text-sm" style={{color: '#D97706'}}>
                       ⚠️ You must claim the previous tags in order first! Complete the earlier tags before claiming this one.
                     </p>
                     {(() => {
@@ -783,13 +819,13 @@ export default function TagPage() {
                       const activeTags = tags
                         .filter(tag => tag.gameId === currentGameId && tag.isActive)
                         .sort((a, b) => a.orderIndex - b.orderIndex);
-                      
-                      const nextTag = activeTags.find(tag => 
+
+                      const nextTag = activeTags.find(tag =>
                         !hasPlayerClaimedTag(progress, playerData.playerId, tag.tagId, currentGameId)
                       );
-                      
+
                       return nextTag ? (
-                        <p className="text-yellow-700 text-xs mt-1">
+                        <p className="text-xs mt-1" style={{color: '#92400E'}}>
                           Next tag to claim: <span className="font-semibold">{nextTag.tagId}</span>
                         </p>
                       ) : null;
@@ -800,13 +836,15 @@ export default function TagPage() {
                 <button
                   onClick={handleClaimTag}
                   disabled={actionLoading || !playerCanClaimTag}
-                  className={`w-full py-3 px-4 rounded-md text-lg font-medium ${
-                    playerCanClaimTag 
-                      ? 'bg-green-600 text-white hover:bg-green-700' 
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  className="w-full py-3 px-4 rounded-lg text-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    backgroundColor: playerCanClaimTag ? '#059669' : '#D1D5DB',
+                    color: playerCanClaimTag ? 'white' : '#6B7280'
+                  }}
+                  onMouseEnter={e => playerCanClaimTag && !e.target.disabled && (e.target.style.backgroundColor = '#047857')}
+                  onMouseLeave={e => playerCanClaimTag && !e.target.disabled && (e.target.style.backgroundColor = '#059669')}
                 >
-                  {actionLoading ? 'Claiming...' : 
+                  {actionLoading ? 'Claiming...' :
                    playerCanClaimTag ? 'Claim This Tag!' : 'Complete Previous Tags First'}
                 </button>
               </div>
@@ -816,8 +854,8 @@ export default function TagPage() {
 
         {/* Footer */}
         <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500">
-            Connected to live SpacetimeDB data. Writes will be added in Step 3.
+          <p className="text-sm" style={{color: '#6B7280'}}>
+            Connected to live SpacetimeDB data.
           </p>
         </div>
       </div>
