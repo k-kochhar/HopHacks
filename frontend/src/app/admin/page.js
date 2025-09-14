@@ -1,5 +1,7 @@
 'use client';
 
+import AdminMap from './components/AdminMap';
+
 /**
  * Admin dashboard for managing the scavenger hunt game
  * 
@@ -174,10 +176,20 @@ function AdminPageContent() {
           setTags(prev => prev.filter(t => t.tagId !== row.tagId));
         });
 
-        // Players table callbacks (insert-only, no updates)
+        // Players table callbacks (delete + insert pattern, no updates)
         conn.db.players.onInsert((_ctx, row) => {
           console.log('Admin: Player inserted:', row);
-          setPlayers(prev => [...prev, row]);
+          setPlayers(prev => {
+            // Check if player already exists to prevent duplicates
+            const exists = prev.some(p => p.playerId === row.playerId);
+            if (exists) {
+              console.log('Admin: Player already exists, replacing:', row.playerId);
+              return prev.map(p => p.playerId === row.playerId ? row : p);
+            } else {
+              console.log('Admin: Adding new player:', row.playerId);
+              return [...prev, row];
+            }
+          });
         });
         
         conn.db.players.onDelete((_ctx, row) => {
@@ -185,10 +197,24 @@ function AdminPageContent() {
           setPlayers(prev => prev.filter(p => p.playerId !== row.playerId));
         });
 
-        // Progress table callbacks (append-only, no updates)
+        // Progress table callbacks (delete + insert pattern, no updates)
         conn.db.progress.onInsert((_ctx, row) => {
           console.log('Admin: Progress inserted:', row);
-          setProgress(prev => [...prev, row]);
+          setProgress(prev => {
+            // Check if progress already exists to prevent duplicates
+            const exists = prev.some(p => 
+              p.gameId === row.gameId && p.playerId === row.playerId && p.tagId === row.tagId
+            );
+            if (exists) {
+              console.log('Admin: Progress already exists, replacing:', row.playerId, row.tagId);
+              return prev.map(p => 
+                (p.gameId === row.gameId && p.playerId === row.playerId && p.tagId === row.tagId) ? row : p
+              );
+            } else {
+              console.log('Admin: Adding new progress:', row.playerId, row.tagId);
+              return [...prev, row];
+            }
+          });
         });
         
         conn.db.progress.onDelete((_ctx, row) => {
@@ -559,6 +585,11 @@ function AdminPageContent() {
                         }`}>
                           {tag.isActive ? 'Active' : 'Inactive'}
                         </span>
+                        {tag.lat && tag.lon && (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                            📍 loc
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center space-x-2">
                         <div className="text-sm text-gray-500">
@@ -665,6 +696,12 @@ function AdminPageContent() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Map Section */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mt-8 border border-gray-200">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-6">🗺️ Tag Locations</h2>
+          <AdminMap tags={tags.filter(tag => currentGameId ? tag.gameId === currentGameId : true)} />
         </div>
 
         {/* Players Section */}

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSpacetimeDBConnection } from '../../lib/spacetimedb';
 import { getPlayerData, getRole } from '../../lib/localStorage';
+import PlayerMap from './components/PlayerMap';
 
 export default function PlayerDashboard() {
   const router = useRouter();
@@ -98,10 +99,24 @@ export default function PlayerDashboard() {
           setTags(prev => prev.filter(t => t.tagId !== row.tagId));
         });
 
-        // Progress table callbacks (append-only, no updates)
+        // Progress table callbacks (delete + insert pattern, no updates)
         conn.db.progress.onInsert((_ctx, row) => {
           console.log('Dashboard: Progress inserted:', row);
-          setProgress(prev => [...prev, row]);
+          setProgress(prev => {
+            // Check if progress already exists to prevent duplicates
+            const exists = prev.some(p => 
+              p.gameId === row.gameId && p.playerId === row.playerId && p.tagId === row.tagId
+            );
+            if (exists) {
+              console.log('Dashboard: Progress already exists, replacing:', row.playerId, row.tagId);
+              return prev.map(p => 
+                (p.gameId === row.gameId && p.playerId === row.playerId && p.tagId === row.tagId) ? row : p
+              );
+            } else {
+              console.log('Dashboard: Adding new progress:', row.playerId, row.tagId);
+              return [...prev, row];
+            }
+          });
         });
         
         conn.db.progress.onDelete((_ctx, row) => {
@@ -173,15 +188,8 @@ export default function PlayerDashboard() {
   };
 
   const canAccessTag = (tag) => {
-    // Players can only access tags in order
-    const sortedTags = [...tags].sort((a, b) => a.orderIndex - b.orderIndex);
-    const tagIndex = sortedTags.findIndex(t => t.tagId === tag.tagId);
-    
-    if (tagIndex === 0) return true; // First tag is always accessible
-    
-    // Check if previous tag is completed
-    const previousTag = sortedTags[tagIndex - 1];
-    return getTagStatus(previousTag.tagId) === 'completed';
+    // Only show completed tags
+    return getTagStatus(tag.tagId) === 'completed';
   };
 
   // Removed handleTagClick - players should not be able to directly access tag pages
@@ -210,6 +218,8 @@ export default function PlayerDashboard() {
 
   const completedCount = progress.length;
   const totalTags = tags.length;
+  const unlockedTags = tags.filter(tag => canAccessTag(tag));
+  const lockedTags = totalTags - unlockedTags.length;
   const nextTag = getNextTagToFind();
 
   return (
@@ -228,6 +238,18 @@ export default function PlayerDashboard() {
               <span>Progress</span>
               <span>{completedCount}/{totalTags} tags found</span>
             </div>
+            {completedCount === 0 && totalTags > 0 && (
+              <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+                <span>🔍 Ready to start</span>
+                <span>Find the first NFC tag!</span>
+              </div>
+            )}
+            {completedCount > 0 && lockedTags > 0 && (
+              <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+                <span>🔒 More tags</span>
+                <span>{lockedTags} more to discover</span>
+              </div>
+            )}
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
@@ -268,9 +290,19 @@ export default function PlayerDashboard() {
             <p className="text-gray-600 text-center py-8">
               No tags have been created yet. Check back later!
             </p>
+          ) : tags.filter(tag => canAccessTag(tag)).length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-600 mb-4">
+                🔍 Start your scavenger hunt! Find and scan the first NFC tag to begin.
+              </p>
+              <p className="text-sm text-gray-500">
+                Tags will appear here as you complete them.
+              </p>
+            </div>
           ) : (
             <div className="grid gap-4">
               {tags
+                .filter(tag => canAccessTag(tag)) // Only show completed tags
                 .sort((a, b) => a.orderIndex - b.orderIndex)
                 .map((tag) => {
                   const status = getTagStatus(tag.tagId);
@@ -326,6 +358,16 @@ export default function PlayerDashboard() {
                 })}
             </div>
           )}
+        </div>
+
+        {/* Map Section */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">🗺️ Tag Map</h2>
+          <PlayerMap 
+            tags={tags} 
+            progress={progress} 
+            playerId={playerData?.playerId} 
+          />
         </div>
 
         {/* Game Complete */}

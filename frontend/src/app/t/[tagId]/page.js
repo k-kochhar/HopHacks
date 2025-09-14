@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { getRole, getPlayerData } from '../../../lib/localStorage';
 import { getSpacetimeDBConnection } from '../../../lib/spacetimedb';
 import { countPlayerClaims, hasPlayerClaimedTag } from '../../../lib/utils';
+import { formatCoord, DEFAULT_LAT, DEFAULT_LON } from '../../_lib/geo';
+import GeoPickModal from '../../_components/GeoPickModal';
 
 /**
  * NFC Tag interaction page
@@ -26,6 +28,10 @@ export default function TagPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [currentGameId, setCurrentGameId] = useState(null);
+  
+  // Geolocation state
+  const [showGeoModal, setShowGeoModal] = useState(false);
+  const [geoError, setGeoError] = useState('');
   
   // SpacetimeDB data
   const [games, setGames] = useState([]);
@@ -116,8 +122,40 @@ export default function TagPage() {
         // Set up table callbacks for real-time updates
         console.log('Tag page: Setting up table callbacks...');
         
+        // Define callReducer function inside useEffect to access connection
+        const callReducer = async (reducerName, args) => {
+          try {
+            if (!connection || !connection.db) {
+              throw new Error('SpacetimeDB connection not ready');
+            }
+            
+            // Use the SpacetimeDB client's callReducer method
+            switch (reducerName) {
+              case 'activate_tag':
+                connection.reducers.activateTag(args[0], args[1], args[2], args[3]);
+                break;
+              case 'activate_tag_with_location':
+                connection.reducers.activateTagWithLocation(args[0], args[1], args[2], args[3], args[4], args[5]);
+                break;
+              case 'claim_tag':
+                connection.reducers.claimTag(args[0], args[1], args[2]);
+                break;
+              case 'create_game':
+                connection.reducers.createGame(args[0]);
+                break;
+              default:
+                throw new Error(`Unknown reducer: ${reducerName}`);
+            }
+            
+            console.log(`Tag page: Reducer ${reducerName} called successfully.`);
+          } catch (err) {
+            console.error(`Tag page: Error calling reducer ${reducerName}:`, err);
+            setMessage(`Error: ${err.message}`);
+          }
+        };
+        
         // Games table callbacks (delete + insert pattern, no updates)
-        conn.db.games.onInsert((_ctx, row) => {
+        connection.db.games.onInsert((_ctx, row) => {
           console.log('Tag page: Game inserted:', row);
           setGames(prev => {
             // Check if game already exists to prevent duplicates
@@ -134,7 +172,7 @@ export default function TagPage() {
         });
 
         // Tags table callbacks (delete + insert pattern, no updates)
-        conn.db.tags.onInsert((_ctx, row) => {
+        connection.db.tags.onInsert((_ctx, row) => {
           console.log('Tag page: Tag inserted:', row);
           setTags(prev => {
             // Check if tag already exists to prevent duplicates
@@ -149,18 +187,32 @@ export default function TagPage() {
           });
         });
         
-        conn.db.tags.onDelete((_ctx, row) => {
+        connection.db.tags.onDelete((_ctx, row) => {
           console.log('Tag page: Tag deleted:', row);
           setTags(prev => prev.filter(t => t.tagId !== row.tagId));
         });
 
-        // Progress table callbacks (append-only, no updates)
-        conn.db.progress.onInsert((_ctx, row) => {
+        // Progress table callbacks (delete + insert pattern, no updates)
+        connection.db.progress.onInsert((_ctx, row) => {
           console.log('Tag page: Progress inserted:', row);
-          setProgress(prev => [...prev, row]);
+          setProgress(prev => {
+            // Check if progress already exists to prevent duplicates
+            const exists = prev.some(p => 
+              p.gameId === row.gameId && p.playerId === row.playerId && p.tagId === row.tagId
+            );
+            if (exists) {
+              console.log('Tag page: Progress already exists, replacing:', row.playerId, row.tagId);
+              return prev.map(p => 
+                (p.gameId === row.gameId && p.playerId === row.playerId && p.tagId === row.tagId) ? row : p
+              );
+            } else {
+              console.log('Tag page: Adding new progress:', row.playerId, row.tagId);
+              return [...prev, row];
+            }
+          });
         });
         
-        conn.db.progress.onDelete((_ctx, row) => {
+        connection.db.progress.onDelete((_ctx, row) => {
           console.log('Tag page: Progress deleted:', row);
           setProgress(prev => prev.filter(p => 
             !(p.gameId === row.gameId && p.playerId === row.playerId && p.tagId === row.tagId)
@@ -189,31 +241,6 @@ export default function TagPage() {
       }
     };
   }, []);
-
-  const callReducer = async (reducerName, args) => {
-    try {
-      if (!connection || !connection.db) {
-        throw new Error('SpacetimeDB connection not ready');
-      }
-      
-      // Use the SpacetimeDB client's callReducer method
-      switch (reducerName) {
-        case 'activate_tag':
-          connection.reducers.activateTag(args[0], args[1], args[2], args[3]);
-          break;
-        case 'claim_tag':
-          connection.reducers.claimTag(args[0], args[1], args[2]);
-          break;
-        default:
-          throw new Error(`Unknown reducer: ${reducerName}`);
-      }
-      
-      console.log(`Tag page: Reducer ${reducerName} called successfully.`);
-    } catch (err) {
-      console.error(`Tag page: Error calling reducer ${reducerName}:`, err);
-      setMessage(`Error: ${err.message}`);
-    }
-  };
 
   // Get current game status
   const currentGame = currentGameId ? games.find(game => game.gameId === currentGameId) : null;
@@ -274,13 +301,134 @@ export default function TagPage() {
         setTimeout(checkReady, 100);
       });
       
+      // Get existing tag data to preserve clue and order
+      const existingOrder = currentTag?.orderIndex || 1;
+      const existingClue = currentTag?.clue;
+      
       // Call the reducer using the client SDK
-      connection.reducers.activateTag(currentGameId, tagId, 1, null); // order_index = 1, clue = null
+      connection.reducers.activateTag(currentGameId, tagId, existingOrder, existingClue);
       
       setMessage('Tag activated successfully! ✅');
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       console.error('Error activating tag:', error);
+      setMessage(`Failed to activate tag: ${error.message}`);
+      setTimeout(() => setMessage(''), 3000);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleActivateTagWithLocation = async () => {
+    if (!currentGameId) {
+      setMessage('No game selected');
+      return;
+    }
+    
+    setActionLoading(true);
+    setMessage('');
+    setGeoError('');
+
+    try {
+      // Request geolocation
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          reject,
+          {
+            enableHighAccuracy: true,
+            timeout: 8000,
+            maximumAge: 0
+          }
+        );
+      });
+
+      const { latitude, longitude, accuracy } = position.coords;
+      
+      // Call SpacetimeDB activate_tag_with_location reducer
+      const connection = getSpacetimeDBConnection();
+      
+      // Wait for connection to be ready
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Connection timeout'));
+        }, 5000);
+        
+        const checkReady = () => {
+          if (connection && connection.reducers) {
+            clearTimeout(timeout);
+            resolve();
+          } else {
+            setTimeout(checkReady, 100);
+          }
+        };
+        setTimeout(checkReady, 100);
+      });
+      
+      // Get existing tag data to preserve clue and order
+      const existingOrder = currentTag?.orderIndex || 1;
+      const existingClue = currentTag?.clue;
+      
+      // Call the new activate_tag_with_location reducer
+      connection.reducers.activateTagWithLocation(currentGameId, tagId, latitude, longitude, Math.round(accuracy), 'admin', existingOrder, existingClue);
+      
+      setMessage('Tag activated with location! ✅');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      console.error('Geolocation error:', error);
+      
+      if (error.code === 1) { // PERMISSION_DENIED
+        setGeoError('Location permission denied. Please allow location access or use the map to pick a location.');
+        setShowGeoModal(true);
+      } else if (error.code === 3) { // TIMEOUT
+        setGeoError('Location request timed out. Please use the map to pick a location.');
+        setShowGeoModal(true);
+      } else {
+        setMessage(`Failed to get location: ${error.message}`);
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleGeoModalSave = async (lat, lon) => {
+    if (!currentGameId) return;
+    
+    setActionLoading(true);
+    setMessage('');
+
+    try {
+      const connection = getSpacetimeDBConnection();
+      
+      // Wait for connection to be ready
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Connection timeout'));
+        }, 5000);
+        
+        const checkReady = () => {
+          if (connection && connection.reducers) {
+            clearTimeout(timeout);
+            resolve();
+          } else {
+            setTimeout(checkReady, 100);
+          }
+        };
+        setTimeout(checkReady, 100);
+      });
+      
+      // Get existing tag data to preserve clue and order
+      const existingOrder = currentTag?.orderIndex || 1;
+      const existingClue = currentTag?.clue || null;
+      
+      // Call the new activate_tag_with_location reducer
+      connection.reducers.activateTagWithLocation(currentGameId, tagId, lat, lon, 0, 'admin', existingOrder, existingClue);
+      
+      setMessage('Tag activated with location! ✅');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      console.error('Error activating tag with location:', error);
       setMessage(`Failed to activate tag: ${error.message}`);
       setTimeout(() => setMessage(''), 3000);
     } finally {
@@ -463,13 +611,34 @@ export default function TagPage() {
             {!tagActive ? (
               <div className="space-y-4">
                 <p className="text-gray-600">This tag is not active yet. You can activate it for the current game.</p>
+                
+                {/* Primary button for geolocation activation */}
                 <button
-                  onClick={handleActivateTag}
+                  onClick={handleActivateTagWithLocation}
                   disabled={actionLoading}
                   className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {actionLoading ? 'Activating...' : 'Activate Tag'}
+                  {actionLoading ? 'Activating...' : 'Activate & Save Location'}
                 </button>
+                
+                {/* Secondary button for activation without location */}
+                <button
+                  onClick={handleActivateTag}
+                  disabled={actionLoading}
+                  className="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {actionLoading ? 'Activating...' : 'Activate (no location)'}
+                </button>
+                
+                <p className="text-xs text-gray-500">
+                  We&apos;ll ask for location permission (required once on iPhone).
+                </p>
+                
+                {geoError && (
+                  <div className="text-sm text-red-600 bg-red-50 p-3 rounded">
+                    {geoError}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-4">
@@ -482,6 +651,21 @@ export default function TagPage() {
                 <p className="text-sm text-gray-500">
                   Players can now find and claim this tag during the active game.
                 </p>
+                
+                {/* Show location info if available */}
+                {currentTag && currentTag.lat && currentTag.lon && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded border">
+                    <div className="text-sm font-medium text-blue-900 mb-1">Location:</div>
+                    <div className="text-sm text-blue-700 font-mono">
+                      {formatCoord(currentTag.lat, currentTag.lon)}
+                    </div>
+                    {currentTag.accuracyM && (
+                      <div className="text-xs text-blue-600 mt-1">
+                        ±{currentTag.accuracyM}m accuracy
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -553,6 +737,15 @@ export default function TagPage() {
           </p>
         </div>
       </div>
+      
+      {/* Geolocation Modal */}
+      <GeoPickModal
+        open={showGeoModal}
+        onClose={() => setShowGeoModal(false)}
+        initialLat={DEFAULT_LAT}
+        initialLon={DEFAULT_LON}
+        onSave={handleGeoModalSave}
+      />
     </div>
   );
 }

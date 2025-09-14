@@ -32,50 +32,46 @@ import {
   type ReducerEventContextInterface,
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
-export type Tag = {
-  tagId: string,
+
+export type ActivateTagWithLocation = {
   gameId: string,
-  isActive: boolean,
+  tagId: string,
+  lat: number,
+  lon: number,
+  accuracyM: number,
+  activatedBy: string,
   orderIndex: number,
   clue: string | undefined,
-  lat: number | undefined,
-  lon: number | undefined,
-  accuracyM: number | undefined,
-  activatedBy: string | undefined,
-  activatedAt: bigint | undefined,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace Tag {
+export namespace ActivateTagWithLocation {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("tagId", AlgebraicType.createStringType()),
       new ProductTypeElement("gameId", AlgebraicType.createStringType()),
-      new ProductTypeElement("isActive", AlgebraicType.createBoolType()),
+      new ProductTypeElement("tagId", AlgebraicType.createStringType()),
+      new ProductTypeElement("lat", AlgebraicType.createF64Type()),
+      new ProductTypeElement("lon", AlgebraicType.createF64Type()),
+      new ProductTypeElement("accuracyM", AlgebraicType.createI32Type()),
+      new ProductTypeElement("activatedBy", AlgebraicType.createStringType()),
       new ProductTypeElement("orderIndex", AlgebraicType.createI32Type()),
       new ProductTypeElement("clue", AlgebraicType.createOptionType(AlgebraicType.createStringType())),
-      new ProductTypeElement("lat", AlgebraicType.createOptionType(AlgebraicType.createF64Type())),
-      new ProductTypeElement("lon", AlgebraicType.createOptionType(AlgebraicType.createF64Type())),
-      new ProductTypeElement("accuracyM", AlgebraicType.createOptionType(AlgebraicType.createI32Type())),
-      new ProductTypeElement("activatedBy", AlgebraicType.createOptionType(AlgebraicType.createStringType())),
-      new ProductTypeElement("activatedAt", AlgebraicType.createOptionType(AlgebraicType.createI64Type())),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: Tag): void {
-    Tag.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: ActivateTagWithLocation): void {
+    ActivateTagWithLocation.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): Tag {
-    return Tag.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): ActivateTagWithLocation {
+    return ActivateTagWithLocation.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }
-
 

@@ -16,6 +16,12 @@ pub struct Tag {
     is_active: bool,
     order_index: i32, // 1, 2, 3, etc. - players must claim in order
     clue: Option<String>,
+    // Geolocation fields (nullable)
+    lat: Option<f64>,
+    lon: Option<f64>,
+    accuracy_m: Option<i32>,
+    activated_by: Option<String>,
+    activated_at: Option<i64>,
 }
 
 // Simple players table
@@ -125,6 +131,11 @@ pub fn create_tag(ctx: &ReducerContext, game_id: String, tag_id: String, order_i
         is_active: false,
         order_index,
         clue,
+        lat: None,
+        lon: None,
+        accuracy_m: None,
+        activated_by: None,
+        activated_at: None,
     });
 
     log::info!("Created tag: {} in game: {}", tag_id, game_id);
@@ -153,9 +164,48 @@ pub fn activate_tag(ctx: &ReducerContext, game_id: String, tag_id: String, order
         is_active: true,
         order_index,
         clue,
+        lat: None,
+        lon: None,
+        accuracy_m: None,
+        activated_by: None,
+        activated_at: None,
     });
 
     log::info!("Activated tag: {} in game: {}", tag_id, game_id);
+    Ok(())
+}
+
+// Activate a tag with geolocation (organizer only)
+#[reducer]
+pub fn activate_tag_with_location(ctx: &ReducerContext, game_id: String, tag_id: String, lat: f64, lon: f64, accuracy_m: i32, activated_by: String, order_index: i32, clue: Option<String>) -> Result<(), String> {
+    // Check if game exists
+    let _game = ctx.db.games().iter()
+        .find(|g| g.game_id == game_id)
+        .ok_or("Game not found")?;
+
+    // Find and delete existing tag if it exists (globally)
+    if let Some(existing_tag) = ctx.db.tags().iter()
+        .find(|t| t.tag_id == tag_id) {
+        ctx.db.tags().delete(existing_tag);
+        log::info!("Deleted existing tag: {} before activating with location", tag_id);
+    }
+
+    // Create new tag as active with geolocation
+    ctx.db.tags().insert(Tag {
+        tag_id: tag_id.clone(),
+        game_id: game_id.clone(),
+        is_active: true,
+        order_index, // Use provided order_index
+        clue: clue.clone(), // Use provided clue (clone for logging)
+        lat: Some(lat),
+        lon: Some(lon),
+        accuracy_m: Some(accuracy_m),
+        activated_by: Some(activated_by),
+        activated_at: None, // TODO: Use proper timestamp when available
+    });
+
+    log::info!("Activated tag: {} in game: {} with location: {:.5}, {:.5} (±{}m), order: {}, clue: {:?}", 
+               tag_id, game_id, lat, lon, accuracy_m, order_index, clue);
     Ok(())
 }
 
