@@ -366,20 +366,21 @@ function AdminPageContent() {
       return;
     }
     
-    const tagId = prompt('Enter tag ID (e.g., TAG001, LOCATION_A, etc.):');
-    if (!tagId || !tagId.trim()) {
-      alert('Tag ID is required');
-      return;
-    }
+    // Auto-generate tag ID based on current tag count
+    const currentTags = tags.filter(tag => currentGameId ? tag.gameId === currentGameId : true);
+    const nextTagNumber = currentTags.length + 1;
+    const tagId = `TAG${nextTagNumber.toString().padStart(3, '0')}`;
+    
+    // Auto-generate order index (same as tag count + 1)
+    const orderIndex = nextTagNumber;
     
     const clue = prompt('Enter clue (optional, press Enter to skip):');
-    const orderIndex = prompt('Enter order index (optional, press Enter to skip):');
     
     // Create tag as inactive first
     const args = [
       currentGameId,
-      tagId.trim(), 
-      orderIndex && orderIndex.trim() ? parseInt(orderIndex) : 1,
+      tagId, 
+      orderIndex,
       clue && clue.trim() ? clue.trim() : null
     ];
     
@@ -472,6 +473,22 @@ function AdminPageContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+      <style jsx>{`
+        .scrollable-content::-webkit-scrollbar {
+          width: 6px;
+        }
+        .scrollable-content::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 3px;
+        }
+        .scrollable-content::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 3px;
+        }
+        .scrollable-content::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">🎯 Scavenger Hunt Admin</h1>
@@ -559,7 +576,7 @@ function AdminPageContent() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Tags Section */}
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 flex flex-col h-96">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-semibold text-gray-900">🏷️ NFC Tags</h2>
               <div className="flex space-x-2">
@@ -567,11 +584,11 @@ function AdminPageContent() {
                   onClick={createTag}
                   className="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200 transition-colors"
                 >
-                  Create Tag
+                  + Add Tag
                 </button>
               </div>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto flex-1 pr-2 scrollable-content">
               {tags && tags.length > 0 ? (
                 tags.filter(tag => currentGameId ? tag.gameId === currentGameId : true).map((tag, index) => (
                   <div key={`${tag.tagId}-${index}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -587,14 +604,11 @@ function AdminPageContent() {
                         </span>
                         {tag.lat && tag.lon && (
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                            📍 loc
+                            📍 
                           </span>
                         )}
                       </div>
                       <div className="flex items-center space-x-2">
-                        <div className="text-sm text-gray-500">
-                          {tag.isActive ? '✅ Active' : '⏸️ Inactive'}
-                        </div>
                         <button
                           onClick={() => deleteTag(tag.tagId)}
                           disabled={actionLoading[`delete_tag_${tag.tagId}`]}
@@ -629,9 +643,9 @@ function AdminPageContent() {
           </div>
 
           {/* Progress Section */}
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 flex flex-col h-96">
             <h2 className="text-2xl font-semibold text-gray-900 mb-6">📊 Recent Progress</h2>
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto flex-1 pr-2 scrollable-content">
               {progress && progress.length > 0 ? (
                 progress.filter(entry => currentGameId ? entry.gameId === currentGameId : true).slice(0, 8).map((entry, index) => (
                   <div key={`${entry.gameId}-${entry.playerId}-${entry.tagId}-${index}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -663,9 +677,9 @@ function AdminPageContent() {
         </div>
 
         {/* Leaderboard Section */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mt-8 border border-gray-200">
+        <div className="bg-white rounded-xl shadow-lg p-6 mt-8 border border-gray-200 flex flex-col h-80">
           <h2 className="text-2xl font-semibold text-gray-900 mb-6">🏆 Leaderboard</h2>
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto flex-1 pr-2">
             {leaderboard && leaderboard.length > 0 ? (
               leaderboard.map((entry, index) => (
                 <div key={entry.playerId} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -705,7 +719,7 @@ function AdminPageContent() {
         </div>
 
         {/* Players Section */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mt-8 border border-gray-200">
+        <div className="bg-white rounded-xl shadow-lg p-6 mt-8 border border-gray-200 flex flex-col h-60">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold text-gray-900">👥 Registered Players</h2>
             <button
@@ -715,7 +729,7 @@ function AdminPageContent() {
               Add/Update Player
             </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto flex-1 pr-2 scrollable-content">
             {players && players.length > 0 ? (
               players.map((player, index) => (
                 <div key={`${player.playerId}-${index}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
